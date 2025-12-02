@@ -1,157 +1,179 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+
+import '../screens/settings_screen.dart';
+
+typedef OnUserSelected = void Function(String user);
+typedef OnThemeChange = void Function(ThemeMode mode);
 
 class SidebarUsers extends StatefulWidget {
-  final Function(String) onSelect;
+  final double minWidth;
+  final double maxWidth;
+  final bool initiallyExpanded;
+  final OnUserSelected onUserSelected;
+  final OnThemeChange onThemeChange;
+  final ThemeMode currentThemeMode;
   final String? selectedUser;
 
   const SidebarUsers({
     super.key,
-    required this.onSelect,
-    required this.selectedUser,
+    required this.onUserSelected,
+    required this.onThemeChange,
+    required this.currentThemeMode,
+    this.selectedUser,
+    this.minWidth = 70,
+    this.maxWidth = 280,
+    this.initiallyExpanded = true,
   });
 
   @override
   State<SidebarUsers> createState() => _SidebarUsersState();
 }
 
-class _SidebarUsersState extends State<SidebarUsers> {
-  double width = 180;
-  final double maxWidth = 180;
-  final double minWidth = 60;
+class _SidebarUsersState extends State<SidebarUsers>
+    with SingleTickerProviderStateMixin {
+  late bool expanded;
+  late AnimationController _controller;
 
-  final List<Map<String, dynamic>> users = [
-    {"name": "Алексей", "online": true},
-    {"name": "Марина", "online": false},
-    {"name": "Иван", "online": true},
-    {"name": "Светлана", "online": true},
-    {"name": "Дмитрий", "online": false},
-    {"name": "Ольга", "online": true},
-    {"name": "Никита", "online": true},
-    {"name": "Екатерина", "online": false},
-    {"name": "Сергей", "online": true},
-    {"name": "Анна", "online": true},
+  final List<String> users = [
+    'Alice',
+    'Bob',
+    'Charlie',
+    'Dave',
+    'Eve',
+    'Mallory',
+    'Trent',
   ];
 
-  String searchQuery = "";
+  @override
+  void initState() {
+    super.initState();
+    expanded = widget.initiallyExpanded;
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    if (expanded) _controller.value = 1.0;
+  }
+
+  void toggle() {
+    setState(() {
+      expanded = !expanded;
+      if (expanded) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filteredUsers = users
-        .where((u) => u["name"].toLowerCase().contains(searchQuery.toLowerCase()))
-        .toList();
+    final theme = Theme.of(context);
+    final isDesktop = MediaQuery.of(context).size.width > 800;
 
-    return GestureDetector(
-      onHorizontalDragUpdate: (details) {
-        setState(() {
-          width += details.delta.dx;
-          if (width > maxWidth) width = maxWidth;
-          if (width < minWidth) width = minWidth;
-        });
-      },
-      onHorizontalDragEnd: (details) {
-        setState(() {
-          width = width > (maxWidth + minWidth) / 2 ? maxWidth : minWidth;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150), // быстрее
-        width: width,
-        curve: Curves.easeOut,
-        color: const Color(0xFF2B2B2B),
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-            if (width > minWidth + 20)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextField(
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: "Поиск",
-                    hintStyle: TextStyle(color: Colors.grey[400]),
-                    filled: true,
-                    fillColor: const Color(0xFF3A3A3A),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final width = lerpDouble(widget.minWidth, widget.maxWidth, _controller.value)!;
+
+        return Material(
+          elevation: 4,
+          child: Container(
+            width: width,
+            color: theme.cardColor,
+            child: Column(
+              children: [
+                // Header with toggle
+                SizedBox(
+                  height: 64,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: AnimatedIcon(
+                          icon: AnimatedIcons.menu_arrow,
+                          progress: _controller,
+                        ),
+                        onPressed: toggle,
+                      ),
+                      if (_controller.value > 0.25)
+                        Expanded(
+                          child: Text(
+                            "Users",
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                    ],
                   ),
-                  onChanged: (value) {
-                    setState(() {
-                      searchQuery = value;
-                    });
+                ),
+
+                // Настройки
+                ListTile(
+                  leading: const Icon(Icons.settings, color: Colors.white),
+                  title: const Text("Настройки",
+                      style: TextStyle(color: Colors.white)),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SettingsScreen(
+                          isDesktop: isDesktop,
+                          onThemeChange: widget.onThemeChange,
+                        ),
+                      ),
+                    );
                   },
                 ),
-              ),
-            const SizedBox(height: 4),
-            Expanded(
-              child: ListView.builder(
-                itemCount: filteredUsers.length,
-                itemBuilder: (context, i) {
-                  final user = filteredUsers[i];
-                  final selected = user["name"] == widget.selectedUser;
-                  return InkWell(
-                    onTap: () => widget.onSelect(user["name"]),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                      decoration: selected
-                          ? BoxDecoration(
-                        color: const Color(0xFF3A3A3A),
-                        borderRadius: BorderRadius.circular(8),
-                      )
-                          : null,
-                      child: Row(
-                        children: [
-                          Stack(
+                const Divider(height: 1),
+
+                // Список пользователей
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: users.length,
+                    itemBuilder: (context, i) {
+                      final u = users[i];
+                      final selected = widget.selectedUser == u;
+
+                      return InkWell(
+                        onTap: () => widget.onUserSelected(u),
+                        child: Container(
+                          padding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          color: selected
+                              ? theme.primaryColor.withOpacity(0.08)
+                              : null,
+                          child: Row(
                             children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor: Colors.grey.shade700,
-                                child: Text(
-                                  user["name"][0],
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    color: user["online"] ? Colors.green : Colors.grey,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: const Color(0xFF2B2B2B), width: 1.5),
+                              CircleAvatar(child: Text(u[0])),
+                              const SizedBox(width: 12),
+                              // имя плавно показывается при expand
+                              ClipRect(
+                                child: SizedBox(
+                                  width: (width - 120).clamp(0, 180),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Opacity(
+                                      opacity: _controller.value,
+                                      child: Text(
+                                        u,
+                                        overflow: TextOverflow.fade,
+                                        maxLines: 1,
+                                        style: theme.textTheme.bodyMedium,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              )
+                              ),
                             ],
                           ),
-                          // Контент теперь не переполняется
-                          if (width > minWidth + 20) const SizedBox(width: 12),
-                          if (width > minWidth + 20)
-                            Flexible(
-                              child: Text(
-                                user["name"],
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: selected ? Colors.white : Colors.grey[300],
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

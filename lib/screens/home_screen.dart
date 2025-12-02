@@ -3,7 +3,14 @@ import '../widgets/sidebar_users.dart';
 import '../widgets/chat_window.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Function(ThemeMode) onThemeChange;
+  final ThemeMode currentThemeMode;
+
+  const HomeScreen({
+    super.key,
+    required this.onThemeChange,
+    required this.currentThemeMode,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -14,20 +21,61 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Row(
+    return LayoutBuilder(builder: (context, constraints) {
+      final isDesktop = constraints.maxWidth >= 900;
+
+      return Scaffold(
+        // Drawer для мобильных
+        drawer: isDesktop
+            ? null
+            : Drawer(
+          child: SidebarUsers(
+            onUserSelected: (u) {
+              setState(() {
+                selectedUser = u;
+              });
+              Navigator.of(context).maybePop();
+            },
+            selectedUser: selectedUser,
+            initiallyExpanded: true,
+            minWidth: 70,
+            maxWidth: 260,
+            onThemeChange: widget.onThemeChange,
+            currentThemeMode: widget.currentThemeMode,
+          ),
+        ),
+        body: Row(
           children: [
-            SidebarUsers(
-              onSelect: (user) => setState(() => selectedUser = user),
-              selectedUser: selectedUser,
-            ),
+            // Desktop: показываем Sidebar
+            if (isDesktop)
+              SidebarUsers(
+                onUserSelected: (u) {
+                  setState(() => selectedUser = u);
+                },
+                selectedUser: selectedUser,
+                minWidth: 80,
+                maxWidth: 260,
+                initiallyExpanded: true,
+                onThemeChange: widget.onThemeChange,
+                currentThemeMode: widget.currentThemeMode,
+              ),
+            // Основная область чата
             Expanded(
-              child: ChatWindow(username: selectedUser),
+              child: Column(
+                children: [
+                  // Можно сюда добавить верхний AppBar или кастомный контейнер
+                  Expanded(
+                    child: ChatWindow(
+                      username: selectedUser,
+                      isMobile: !isDesktop,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-      ),
-    );
+      );
+    });
   }
 }
