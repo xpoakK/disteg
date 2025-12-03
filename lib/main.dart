@@ -233,14 +233,6 @@ class _BackButtonSoft extends StatelessWidget {
             ),
           ],
         ),
-        child: const Text(
-          'Назад',
-          style: TextStyle(
-            fontSize: 20,
-            color: Color(0xFF2979FF), // голубой цвет как на примере
-            fontWeight: FontWeight.w500,
-          ),
-        ),
       ),
     );
   }
