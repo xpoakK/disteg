@@ -23,20 +23,17 @@ class DisTegScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: const Color(0xFFB3B3B3), // УБРАТЬ
-
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFE0E0E0), // верх (светлее)
-              Color(0xFF505050), // низ (темнее)
+              Color(0xFFE0E0E0),
+              Color(0xFF505050),
             ],
           ),
         ),
-
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -44,7 +41,7 @@ class DisTegScreen extends StatelessWidget {
 
               return Stack(
                 children: [
-                  // ЛОГО DTS (картинка). Заменишь на свою.
+                  // Нижнее большое лого
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
@@ -59,7 +56,7 @@ class DisTegScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // Верхний текст
+                  // Верхний текст и лого
                   Align(
                     alignment: Alignment.topCenter,
                     child: Padding(
@@ -79,9 +76,10 @@ class DisTegScreen extends StatelessWidget {
                                   height: 44,
                                 ),
                               ),
-                              Text(
+                              const SizedBox(width: 8),
+                              const Text(
                                 'DisTag',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 40,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 1.2,
@@ -90,11 +88,13 @@ class DisTegScreen extends StatelessWidget {
                               ),
                             ],
                           ),
+
                           const SizedBox(height: 23),
+
                           const Text(
                             'Новый мессенджер,\n'
-                            'собравший в себе все самые\n'
-                            'лучшие функции',
+                                'собравший в себе все самые\n'
+                                'лучшие функции',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
@@ -111,30 +111,32 @@ class DisTegScreen extends StatelessWidget {
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
-                      padding: EdgeInsets.only(
-                        bottom: h * 0.14,
-                      ),
+                      padding: EdgeInsets.only(bottom: h * 0.14),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _GlassButton(
                             text: 'Войти',
-                             onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                                  );
-                                 }
-                               ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const LoginScreen()),
+                              );
+                            },
+                          ),
+
                           const SizedBox(height: 24),
+
                           _GlassButton(
                             text: 'Создать',
                             onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const RegistrationScreen()),
-                            );
-                            }
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const RegistrationScreen()),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -150,8 +152,7 @@ class DisTegScreen extends StatelessWidget {
   }
 }
 
-
-/// Простейшая "стеклянная" кнопка.
+/// Стеклянная кнопка
 class _GlassButton extends StatelessWidget {
   final String text;
   final VoidCallback onTap;
@@ -175,16 +176,16 @@ class _GlassButton extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(33),
-              color: Colors.white.withValues(alpha: .03),
+              color: Colors.white.withOpacity(.03),
               border: Border.all(
-                color: Colors.white.withValues(alpha: .8),
+                color: Colors.white.withOpacity(.8),
                 width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
                   blurRadius: 18,
                   offset: const Offset(0, 8),
-                  color: Colors.black.withValues(alpha: .25),
+                  color: Colors.black.withOpacity(.25),
                 ),
               ],
             ),
@@ -203,67 +204,72 @@ class _GlassButton extends StatelessWidget {
   }
 }
 
-
-class _BackButtonSoft extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _BackButtonSoft({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 150,
-        height: 48,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: .15),
-              blurRadius: 16,
-              offset: const Offset(6, 6),
-            ),
-            BoxShadow(
-              color: Colors.white.withValues(alpha: .9),
-              blurRadius: 12,
-              offset: const Offset(-6, -6),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
-
+// ==========================
+//        LOGIN SCREEN
+// ==========================
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
+
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, // ← ВАЖНО
           children: [
-            // Кнопка назад
+            // Верхняя панель — только логотип
             Padding(
-              padding: const EdgeInsets.only(left: 11, top: 13), // ← двигаешь тут
-              child: _BackButtonSoft(
-                onTap: () => Navigator.pop(context),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/Group.png',
+                    height: 44,
+                  ),
+                ],
               ),
             ),
 
             const SizedBox(height: 20),
 
-            const Center(
-              child: Text(
-                'Страница Входа',
-                style: TextStyle(fontSize: 24),
+            const Text(
+              'Вход',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 25),
+              child: Column(
+                children: [
+                  _InputField(label: 'Логин\\Эл. почта'),
+                  const SizedBox(height: 20),
+                  _InputField(label: 'Пароль', obscure: true),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 40),
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 35, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                elevation: 5,
+              ),
+              onPressed: () {},
+              child: const Text(
+                'Войти',
+                style: TextStyle(fontSize: 18),
               ),
             ),
           ],
@@ -273,6 +279,10 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
+
+// ==========================
+//     REGISTRATION SCREEN
+// ==========================
 class RegistrationScreen extends StatelessWidget {
   const RegistrationScreen({super.key});
 
@@ -282,27 +292,15 @@ class RegistrationScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Верхняя панель с назад + логотип + далее
+            // Верхняя панель — только логотип
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Кнопка назад (твоя)
-                  _BackButtonSoft(
-                    onTap: () => Navigator.pop(context),
-                  ),
-
-                  // Логотип DTS по центру (как картинка)
-              
                   Image.asset(
-                    'assets/images/Group.png',   // сюда положи свою картинку
+                    'assets/images/Group.png',
                     height: 44,
-                  ),
-
-                  // Место под кнопку "Далее" (ты просил не добавлять реальную)
-                  SizedBox(
-                    width: 70, // такой же размер, как кнопка слева
                   ),
                 ],
               ),
@@ -310,7 +308,6 @@ class RegistrationScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Заголовок
             const Text(
               'Регистрация',
               style: TextStyle(
@@ -321,7 +318,6 @@ class RegistrationScreen extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // Поля ввода
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 25),
               child: Column(
@@ -339,10 +335,10 @@ class RegistrationScreen extends StatelessWidget {
 
             const SizedBox(height: 40),
 
-            // Кнопка создания
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 14),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 35, vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
@@ -361,7 +357,7 @@ class RegistrationScreen extends StatelessWidget {
   }
 }
 
-// Универсальное поле
+/// Поле ввода
 class _InputField extends StatelessWidget {
   final String label;
   final bool obscure;
@@ -387,5 +383,3 @@ class _InputField extends StatelessWidget {
     );
   }
 }
-
-
