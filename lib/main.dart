@@ -104,11 +104,11 @@ class DisTegScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 23),
                           const Text(
                             'Новый мессенджер,\n'
-                            'собравший в себе все самые\n'
-                            'лучшие функции',
+                                'собравший в себе все самые\n'
+                                'лучшие функции',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
@@ -292,15 +292,15 @@ class _LoginScreenState extends State<LoginScreen> {
     final data = jsonDecode(response.body);
 
     if (data['success'] == true) {
-  final nameFromServer = data['name'] as String?;
-  final fallback = _loginController.text.trim();
-  final userName = (nameFromServer ?? fallback).isEmpty
-      ? 'Пользователь'
-      : (nameFromServer ?? fallback);
+      final nameFromServer = data['name'] as String?;
+      final fallback = _loginController.text.trim();
+      final userName = (nameFromServer ?? fallback).isEmpty
+          ? 'Пользователь'
+          : (nameFromServer ?? fallback);
 
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setBool('logged_in', true);
-  await prefs.setString('user_name', userName);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('logged_in', true);
+      await prefs.setString('user_name', userName);
 
       Navigator.pushReplacement(
         context,
@@ -429,12 +429,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final data = jsonDecode(response.body);
 
     if (data['success'] == true) {
-  final name = _nameController.text.trim();
-  final userName = name.isEmpty ? 'Без имени' : name;
+      final name = _nameController.text.trim();
+      final userName = name.isEmpty ? 'Без имени' : name;
 
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setBool('logged_in', true);
-  await prefs.setString('user_name', userName);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('logged_in', true);
+      await prefs.setString('user_name', userName);
 
       Navigator.pushReplacement(
         context,
@@ -573,7 +573,7 @@ class _InputFieldState extends State<_InputField> {
       controller: widget.controller,
       obscureText: widget.obscure,
       decoration: InputDecoration(
-        hintText: focusNode.hasFocus ? '' : widget.label,   // исчезает при фокусе
+        hintText: focusNode.hasFocus ? '' : widget.label, // исчезает при фокусе
         hintStyle: TextStyle(color: Colors.grey.shade600),
         filled: true,
         fillColor: const Color(0xFFE6E6E6),
@@ -585,7 +585,6 @@ class _InputFieldState extends State<_InputField> {
     );
   }
 }
-
 
 class _ChatMessage {
   final String text;
@@ -599,12 +598,10 @@ class _ChatMessage {
   });
 }
 
-
-
 // ==========================
 //        CHAT SCREEN
 // ==========================
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends StatefulWidget {
   final String userName;
 
   const ChatScreen({
@@ -613,33 +610,41 @@ class ChatScreen extends StatelessWidget {
   });
 
   @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  final List<_ChatMessage> messages = [
+    _ChatMessage(
+      text: 'Когда сайт будет готов?',
+      time: '22:39',
+      isMe: false,
+    ),
+    _ChatMessage(
+      text: 'Завтра вечером',
+      time: '22:40',
+      isMe: true,
+    ),
+  ];
+
+  final ScrollController scrollController = ScrollController();
+
+  // === ПЕРЕМЕЩЕНО СЮДА ===
+  bool _isSearchActive = false; // активен ли поиск
+  final TextEditingController _searchController = TextEditingController(); // контроллер поля поиска
+  // ========================
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: GestureDetector(
-        // свайп влево -> профиль
-        onHorizontalDragEnd: (details) {
-          if (details.primaryVelocity != null &&
-              details.primaryVelocity! < 0) {
-            Navigator.pushReplacement(
-  context,
-  PageRouteBuilder(
-    transitionDuration: const Duration(milliseconds: 250),
-    pageBuilder: (_, __, ___) => ProfileScreen(userName: userName),
-    transitionsBuilder: (_, animation, __, child) {
-      final offsetAnimation = Tween<Offset>(
-        begin: const Offset(1.0, 0.0), // новый экран приходит СПРАВА
-        end: Offset.zero,
-      ).animate(animation);
-      return SlideTransition(
-        position: offsetAnimation,
-        child: child,
-      );
-    },
-  ),
-);
-
-          }
-        },
         child: Stack(
           children: [
             // фон
@@ -667,11 +672,10 @@ class ChatScreen extends StatelessWidget {
                             const SizedBox(height: 8),
                             Expanded(
                               child: ListView.separated(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                                 itemCount: 7,
                                 separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 18),
+                                const SizedBox(height: 18),
                                 itemBuilder: (_, index) {
                                   return CircleAvatar(
                                     radius: 22,
@@ -700,6 +704,7 @@ class ChatScreen extends StatelessWidget {
                     Expanded(
                       child: Column(
                         children: [
+
                           // ВЕРХНЯЯ ПАНЕЛЬ
                           _GlassPanel(
                             height: 60,
@@ -707,30 +712,50 @@ class ChatScreen extends StatelessWidget {
                             child: Row(
                               children: [
                                 const SizedBox(width: 14),
-                                const Icon(Icons.search, size: 24),
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _isSearchActive = !_isSearchActive;
+                                      if (!_isSearchActive) _searchController.clear();
+                                    });
+                                  },
+                                  child: const Icon(Icons.search, size: 24),
+                                ),
                                 const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    userName,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w500,
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  width: _isSearchActive ? 200 : 0,
+                                  child: _isSearchActive
+                                      ? TextField(
+                                    controller: _searchController,
+                                    style: const TextStyle(color: Colors.white),
+                                    decoration: const InputDecoration(
+                                      hintText: 'Поиск...',
+                                      hintStyle: TextStyle(color: Colors.white54),
+                                      border: InputBorder.none,
+                                    ),
+                                  )
+                                      : null,
+                                ),
+                                if (!_isSearchActive)
+                                  Expanded(
+                                    child: Text(
+                                      widget.userName,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
-                                ),
                                 const CircleAvatar(
                                   radius: 20,
-                                  backgroundImage: AssetImage(
-                                    'assets/avatars/current.jpg',
-                                  ),
+                                  backgroundImage: AssetImage('assets/avatars/current.jpg'),
                                 ),
                                 const SizedBox(width: 14),
                               ],
                             ),
                           ),
-
-                          const SizedBox(height: 14),
 
                           // ЧАТ
                           Expanded(
@@ -740,26 +765,41 @@ class ChatScreen extends StatelessWidget {
                               child: Column(
                                 children: [
                                   Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: const [
-                                        _ChatBubble(
-                                          text: 'Когда сайт будет готов?',
-                                          time: '22:39',
-                                          isMe: false,
-                                        ),
-                                        SizedBox(height: 12),
-                                        _ChatBubble(
-                                          text: 'Завтра вечером',
-                                          time: '22:40',
-                                          isMe: true,
-                                        ),
-                                      ],
+                                    child: ListView.builder(
+                                      controller: scrollController,
+                                      itemCount: messages.length,
+                                      itemBuilder: (_, i) {
+                                        final m = messages[i];
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 12),
+                                          child: _ChatBubble(
+                                            text: m.text,
+                                            time: m.time,
+                                            isMe: m.isMe,
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ),
                                   const SizedBox(height: 12),
-                                  const _MessageInputBar(),
+                                  _MessageInputBar(
+                                    onSend: (text) {
+                                      final now = TimeOfDay.now();
+                                      final time = '${now.hour}:${now.minute.toString().padLeft(2, '0')}';
+
+                                      setState(() {
+                                        messages.add(_ChatMessage(
+                                          text: text,
+                                          time: time,
+                                          isMe: true,
+                                        ));
+                                      });
+
+                                      Future.delayed(const Duration(milliseconds: 50), () {
+                                        scrollController.jumpTo(scrollController.position.maxScrollExtent);
+                                      });
+                                    },
+                                  ),
                                 ],
                               ),
                             ),
@@ -769,64 +809,62 @@ class ChatScreen extends StatelessWidget {
 
                           // НИЖНЕЕ МЕНЮ
                           _GlassPanel(
-  height: 56,
-  borderRadius: BorderRadius.circular(28),
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-    children: [
-      // SETTINGS PNG
-      GestureDetector(
-        onTap: () {},
-        child: Image.asset(
-          'assets/icons/settings.png',
-          width: 28,
-          height: 28,
-        ),
-      ),
+                            height: 56,
+                            borderRadius: BorderRadius.circular(28),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                // SETTINGS PNG
+                                GestureDetector(
+                                  onTap: () {},
+                                  child: Image.asset(
+                                    'assets/icons/settings.png',
+                                    width: 28,
+                                    height: 28,
+                                  ),
+                                ),
 
-      // CHAT PNG — текущий экран
-      GestureDetector(
-        onTap: () {},
-        child: Image.asset(
-          'assets/icons/chat.png',
-          width: 28,
-          height: 28,
-        ),
-      ),
+                                // CHAT PNG — текущий экран
+                                GestureDetector(
+                                  onTap: () {},
+                                  child: Image.asset(
+                                    'assets/icons/chat.png',
+                                    width: 28,
+                                    height: 28,
+                                  ),
+                                ),
 
-      // PROFILE PNG — переход в профиль
-      GestureDetector(
-        onTap: () {
-          Navigator.pushReplacement(
-            context,
-            PageRouteBuilder(
-              transitionDuration: const Duration(milliseconds: 250),
-              pageBuilder: (_, __, ___) =>
-                  ProfileScreen(userName: userName),
-              transitionsBuilder: (_, animation, __, child) {
-                final offsetAnimation = Tween<Offset>(
-                  begin: const Offset(1.0, 0.0),
-                  end: Offset.zero,
-                ).animate(animation);
-                return SlideTransition(
-                  position: offsetAnimation,
-                  child: child,
-                );
-              },
-            ),
-          );
-        },
-        child: Image.asset(
-          'assets/icons/profile.png',
-          width: 28,
-          height: 28,
-        ),
-      ),
-    ],
-  ),
-),
-                      
-                        
+                                // PROFILE PNG — переход в профиль
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      PageRouteBuilder(
+                                        transitionDuration: const Duration(milliseconds: 250),
+                                        pageBuilder: (_, __, ___) =>
+                                            ProfileScreen(userName: widget.userName),
+                                        transitionsBuilder: (_, animation, __, child) {
+                                          final offsetAnimation = Tween<Offset>(
+                                            begin: const Offset(1.0, 0.0),
+                                            end: Offset.zero,
+                                          ).animate(animation);
+                                          return SlideTransition(
+                                            position: offsetAnimation,
+                                            child: child,
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  },
+                                  child: Image.asset(
+                                    'assets/icons/profile.png',
+                                    width: 28,
+                                    height: 28,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -840,7 +878,6 @@ class ChatScreen extends StatelessWidget {
     );
   }
 }
-
 
 /// Универсальная стеклянная панель
 class _GlassPanel extends StatelessWidget {
@@ -920,11 +957,11 @@ class _ChatBubble extends StatelessWidget {
       alignment: alignment,
       child: Column(
         crossAxisAlignment:
-            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: const Color(0xFF707070),
               borderRadius: borderRadius,
@@ -951,10 +988,10 @@ class _ChatBubble extends StatelessWidget {
   }
 }
 
-
-
 class _MessageInputBar extends StatefulWidget {
-  const _MessageInputBar({super.key});
+  final Function(String) onSend;
+
+  const _MessageInputBar({super.key, required this.onSend});
 
   @override
   State<_MessageInputBar> createState() => _MessageInputBarState();
@@ -967,8 +1004,7 @@ class _MessageInputBarState extends State<_MessageInputBar> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    // TODO: здесь потом добавишь добавление сообщения в список чата
-    print('Отправлено: $text');
+    widget.onSend(text); // передаём сообщение наверх
 
     _controller.clear(); // очищаем поле после отправки
   }
@@ -1025,12 +1061,48 @@ class _MessageInputBarState extends State<_MessageInputBar> {
   }
 }
 
+// ==========================
+//    ПОИСКОВЫЙ ДЕЛЕГАТ
+// ==========================
+class ChatSearchDelegate extends SearchDelegate {
+  final List<_ChatMessage> messages;
 
+  ChatSearchDelegate(this.messages);
 
+  @override
+  List<Widget>? buildActions(BuildContext context) => [
+    IconButton(
+      icon: const Icon(Icons.clear),
+      onPressed: () => query = '',
+    )
+  ];
 
+  @override
+  Widget? buildLeading(BuildContext context) => IconButton(
+    icon: const Icon(Icons.arrow_back),
+    onPressed: () => close(context, null),
+  );
 
+  @override
+  Widget buildResults(BuildContext context) {
+    final results = messages.where(
+          (m) => m.text.toLowerCase().contains(query.toLowerCase()),
+    );
 
+    return ListView(
+      children: results
+          .map((m) => ListTile(
+        title: Text(m.text),
+        subtitle: Text(m.time),
+        trailing: m.isMe ? const Text('Я') : const Text('Друг'),
+      ))
+          .toList(),
+    );
+  }
 
+  @override
+  Widget buildSuggestions(BuildContext context) => buildResults(context);
+}
 
 // ==========================
 //        PROFILE SCREEN
@@ -1046,29 +1118,27 @@ class ProfileScreen extends StatelessWidget {
       body: GestureDetector(
         // свайп вправо -> чат
         onHorizontalDragEnd: (details) {
-  if (details.primaryVelocity != null &&
-      details.primaryVelocity! > 0) {
-    Navigator.pushReplacement(
-      context,
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 200),
-        pageBuilder: (_, __, ___) => ChatScreen(userName: userName),
-        transitionsBuilder: (_, animation, __, child) {
-          final offsetAnimation = Tween<Offset>(
-            begin: const Offset(-1.0, 0.0), // ← резкий выезд СЛЕВА
-            end: Offset.zero,
-          ).animate(animation);
-          return SlideTransition(
-            position: offsetAnimation,
-            child: child,
-          );
+          if (details.primaryVelocity != null &&
+              details.primaryVelocity! > 0) {
+            Navigator.pushReplacement(
+              context,
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 200),
+                pageBuilder: (_, __, ___) => ChatScreen(userName: userName),
+                transitionsBuilder: (_, animation, __, child) {
+                  final offsetAnimation = Tween<Offset>(
+                    begin: const Offset(-1.0, 0.0), // ← резкий выезд СЛЕВА
+                    end: Offset.zero,
+                  ).animate(animation);
+                  return SlideTransition(
+                    position: offsetAnimation,
+                    child: child,
+                  );
+                },
+              ),
+            );
+          }
         },
-      ),
-    );
-  }
-},
-
-
         child: Stack(
           children: [
             // Фон
@@ -1095,7 +1165,7 @@ class ProfileScreen extends StatelessWidget {
                         const CircleAvatar(
                           radius: 70,
                           backgroundImage:
-                              AssetImage('assets/avatars/current.jpg'),
+                          AssetImage('assets/avatars/current.jpg'),
                         ),
                         Positioned(
                           bottom: 4,
@@ -1111,7 +1181,7 @@ class ProfileScreen extends StatelessWidget {
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                   color:
-                                      Colors.black.withValues(alpha: .25),
+                                  Colors.black.withValues(alpha: .25),
                                 ),
                               ],
                             ),
@@ -1157,89 +1227,88 @@ class ProfileScreen extends StatelessWidget {
                     onTap: () {},
                   ),
                   const SizedBox(height: 18),
-                  
+
                   _ProfileActionButton(
-  text: 'Выйти из аккаунта',
-  textColor: Colors.red,
-  onTap: () async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // или remove('logged_in') / remove('user_name')
+                    text: 'Выйти из аккаунта',
+                    textColor: Colors.red,
+                    onTap: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.clear(); // или remove('logged_in') / remove('user_name')
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const DisTegScreen()),
-      (route) => false,
-    );
-  },
-),
-
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const DisTegScreen()),
+                            (route) => false,
+                      );
+                    },
+                  ),
 
                   const Spacer(),
 
                   // Нижнее меню
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 3),
-                    child: _GlassPanel(
-                      height: 56,
-                      width: 250,
-                      borderRadius: BorderRadius.circular(28),
-                      child: Row(
-  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-  children: [
-    // SETTINGS PNG
-    GestureDetector(
-      onTap: () {
-        // экран настроек (пока пусто)
-      },
-      child: Image.asset(
-        'assets/icons/settings.png', // свой путь
-        width: 28,
-        height: 28,
-      ),
-    ),
+                      padding: const EdgeInsets.only(bottom: 3),
+                      child: _GlassPanel(
+                        height: 56,
+                        width: 250,
+                        borderRadius: BorderRadius.circular(28),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // SETTINGS PNG
+                            GestureDetector(
+                              onTap: () {
+                                // экран настроек (пока пусто)
+                              },
+                              child: Image.asset(
+                                'assets/icons/settings.png', // свой путь
+                                width: 28,
+                                height: 28,
+                              ),
+                            ),
 
-    // CHAT PNG + анимация в чат
-    GestureDetector(
-      onTap: () {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 200),
-            pageBuilder: (_, __, ___) => ChatScreen(userName: userName),
-            transitionsBuilder: (_, animation, __, child) {
-              final offsetAnimation = Tween<Offset>(
-                begin: const Offset(-1.0, 0.0), // выезд слева
-                end: Offset.zero,
-              ).animate(animation);
-              return SlideTransition(
-                position: offsetAnimation,
-                child: child,
-              );
-            },
-          ),
-        );
-      },
-      child: Image.asset(
-        'assets/icons/chat.png', // свой путь
-        width: 28,
-        height: 28,
-      ),
-    ),
+                            // CHAT PNG + анимация в чат
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  PageRouteBuilder(
+                                    transitionDuration: const Duration(milliseconds: 200),
+                                    pageBuilder: (_, __, ___) => ChatScreen(userName: userName),
+                                    transitionsBuilder: (_, animation, __, child) {
+                                      final offsetAnimation = Tween<Offset>(
+                                        begin: const Offset(-1.0, 0.0), // выезд слева
+                                        end: Offset.zero,
+                                      ).animate(animation);
+                                      return SlideTransition(
+                                        position: offsetAnimation,
+                                        child: child,
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                              child: Image.asset(
+                                'assets/icons/chat.png', // свой путь
+                                width: 28,
+                                height: 28,
+                              ),
+                            ),
 
-    // PROFILE PNG (мы уже на профиле)
-    GestureDetector(
-      onTap: () {
-        // ничего, уже тут
-      },
-      child: Image.asset(
-        'assets/icons/profile.png', // свой путь
-        width: 28,
-        height: 28,
-      ),
-    ),
-  ],
-),
-                    )
+                            // PROFILE PNG (мы уже на профиле)
+                            GestureDetector(
+                              onTap: () {
+                                // ничего, уже тут
+                              },
+                              child: Image.asset(
+                                'assets/icons/profile.png', // свой путь
+                                width: 28,
+                                height: 28,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
                   ),
                 ],
               ),
@@ -1250,7 +1319,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
-
 
 class _ProfileActionButton extends StatelessWidget {
   final String text;
