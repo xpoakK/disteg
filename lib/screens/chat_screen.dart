@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:disteg/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../models/chat_message.dart';
@@ -9,7 +10,6 @@ import '../../widgets/chat_bubble.dart';
 import '../../widgets/message_input_bar.dart';
 import '../../widgets/search_delegate.dart';
 import 'profile_screen.dart';
-import 'package:disteg/screens/settings_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final String userName;
@@ -26,11 +26,15 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> messages = [];
   final ScrollController scrollController = ScrollController();
+  List<UserData> chatUsers = [];
+
   bool _loadingMessages = false;
   bool _isSearchActive = false;
   final TextEditingController _searchController = TextEditingController();
   Timer? _pollTimer;
+
   String? _selectedCompanionLogin;
+  UserData? _selectedCompanion;
 
   String get companionName {
     if (_selectedCompanionLogin != null && _selectedCompanionLogin!.isNotEmpty) {
@@ -66,14 +70,31 @@ class _ChatScreenState extends State<ChatScreen> {
     return [];
   }
 
+  Future<void> loadChatUsers() async {
+    final uri = Uri.parse("https://cl918558.tw1.ru/api/get_chat_users.php?login=${widget.userName}");
+    final r = await http.get(uri);
+
+    if (r.statusCode == 200) {
+      final data = jsonDecode(r.body);
+      if (data["success"] == true) {
+        setState(() {
+          chatUsers = (data["users"] as List).map((e)=>UserData.fromJson(e)).toList();
+        });
+      }
+    }
+  }
+
   Future<void> _openUserSearch() async {
-    final selectedUser = await showSearch<String?>(
+    final selectedUser = await showSearch<UserData?>(
       context: context,
       delegate: ChatSearchDelegate(searchUsers),
     );
 
     if (selectedUser != null) {
-      setState(() => _selectedCompanionLogin = selectedUser);
+      setState(() {
+        _selectedCompanionLogin = selectedUser.login;
+        _selectedCompanion = selectedUser;
+      });
       await _loadMessages();
     }
   }
@@ -82,6 +103,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _loadMessages();
+    loadChatUsers();
     _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       _loadMessages();
     });
@@ -97,6 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _loadMessages() async {
     if (_loadingMessages) return;
+
     if (_selectedCompanionLogin == null || _selectedCompanionLogin!.isEmpty) {
       return;
     }
@@ -193,6 +216,22 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (_) {}
   }
 
+  Widget _buildCompanionAvatar() {
+    final url = _selectedCompanion?.avatarUrl;
+
+    if (url != null && url.isNotEmpty) {
+      return CircleAvatar(
+        radius: 20,
+        backgroundImage: NetworkImage(url),
+      );
+    }
+
+    return const CircleAvatar(
+      radius: 20,
+      backgroundImage: AssetImage('assets/avatars/current.jpg'),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -239,12 +278,26 @@ class _ChatScreenState extends State<ChatScreen> {
                             Expanded(
                               child: ListView.separated(
                                 padding: const EdgeInsets.symmetric(vertical: 12),
-                                itemCount: 10,
+                                itemCount: chatUsers.length,
                                 separatorBuilder: (_, __) => const SizedBox(height: 18),
-                                itemBuilder: (_, index) {
-                                  return CircleAvatar(
-                                    radius: 22,
-                                    backgroundImage: AssetImage('assets/avatars/a$index.jpg'),
+                                itemBuilder: (_, i) {
+                                  final u = chatUsers[i];
+                                  final ImageProvider avatar =
+                                  (u.avatarUrl != null && u.avatarUrl!.isNotEmpty)
+                                      ? NetworkImage(u.avatarUrl!)
+                                      : const AssetImage('assets/avatars/current.jpg');
+                                  return GestureDetector(
+                                    onTap: () async {
+                                      setState(() {
+                                        _selectedCompanionLogin = u.login;
+                                        _selectedCompanion = u;
+                                      });
+                                      await _loadMessages();
+                                    },
+                                    child: CircleAvatar(
+                                      radius: 22,
+                                      backgroundImage: avatar,
+                                    ),
                                   );
                                 },
                               ),
@@ -269,19 +322,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               children: [
                                 const SizedBox(width: 14),
                                 GestureDetector(
-                                  onTap: () async {
-                                    final selectedUser = await showSearch<String?>(
-                                      context: context,
-                                      delegate: ChatSearchDelegate(searchUsers),
-                                    );
-
-                                    if (selectedUser != null) {
-                                      setState(() {
-                                        _selectedCompanionLogin = selectedUser;
-                                      });
-                                      await _loadMessages();
-                                    }
-                                  },
+                                  onTap: _openUserSearch,
                                   child: const Icon(Icons.search, size: 24),
                                 ),
                                 const SizedBox(width: 10),
@@ -312,10 +353,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                       ),
                                     ),
                                   ),
-                                const CircleAvatar(
-                                  radius: 20,
-                                  backgroundImage: AssetImage('assets/avatars/current.jpg'),
-                                ),
+                                _buildCompanionAvatar(),
                                 const SizedBox(width: 14),
                               ],
                             ),
@@ -362,7 +400,6 @@ class _ChatScreenState extends State<ChatScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-
                                 GestureDetector(
                                   onTap: () {
                                     Navigator.push(
@@ -376,7 +413,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                     height: 28,
                                   ),
                                 ),
-
                                 GestureDetector(
                                   onTap: () {},
                                   child: Image.asset(

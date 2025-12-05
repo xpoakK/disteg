@@ -1,12 +1,14 @@
 import 'dart:io';
+import 'dart:convert';
+import 'package:disteg/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../../widgets/glass_panel.dart';
 import '../../widgets/profile_action_button.dart';
 import 'chat_screen.dart';
 import 'welcome_screen.dart';
-import 'package:disteg/screens/settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userName;
@@ -19,7 +21,53 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   File? _avatarFile;
+  String? _avatarUrl;
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvatarUrl();
+  }
+
+  Future<void> _loadAvatarUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _avatarUrl = prefs.getString('avatar_url');
+    });
+  }
+
+  Future<String?> _uploadAvatar(File file) async {
+    final uri = Uri.parse('https://cl918558.tw1.ru/api/upload_avatar.php');
+
+    final request = http.MultipartRequest('POST', uri)
+      ..fields['login'] = widget.userName
+      ..files.add(
+        await http.MultipartFile.fromPath('avatar', file.path),
+      );
+
+    final response = await request.send();
+    final body = await response.stream.bytesToString();
+
+    debugPrint('upload_avatar body: $body');
+
+    if (response.statusCode == 200) {
+      try {
+        final data = jsonDecode(body);
+        if (data['success'] == true) {
+          return data['avatar_url'] as String;
+        } else {
+          debugPrint('upload_avatar error from server: ${data['message']}');
+        }
+      } catch (e) {
+        debugPrint('JSON decode error: $e');
+      }
+    } else {
+      debugPrint('upload_avatar status: ${response.statusCode}');
+    }
+
+    return null;
+  }
 
   Future<void> _pickAvatar() async {
     final XFile? picked = await _picker.pickImage(
@@ -28,16 +76,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     if (picked == null) return;
 
+    final file = File(picked.path);
+
+    if (!mounted) return;
     setState(() {
-      _avatarFile = File(picked.path);
+      _avatarFile = file;
     });
+
+    final url = await _uploadAvatar(file);
+
+    if (!mounted) return;
+
+    if (url != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('avatar_url', url);
+
+      if (!mounted) return;
+      setState(() {
+        _avatarUrl = url;
+      });
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось загрузить аватар')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final ImageProvider avatarImage = _avatarFile != null
-        ? FileImage(_avatarFile!)
-        : const AssetImage('assets/avatars/current.jpg') as ImageProvider;
+    ImageProvider avatarImage;
+    if (_avatarFile != null) {
+      avatarImage = FileImage(_avatarFile!);
+    } else if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
+      avatarImage = NetworkImage(_avatarUrl!);
+    } else {
+      avatarImage = const AssetImage('assets/avatars/current.jpg');
+    }
 
     return Scaffold(
       body: GestureDetector(
@@ -74,12 +149,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-
             SafeArea(
               child: Column(
                 children: [
                   const SizedBox(height: 40),
-
                   Center(
                     child: Stack(
                       clipBehavior: Clip.none,
