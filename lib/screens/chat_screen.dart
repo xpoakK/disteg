@@ -8,7 +8,8 @@ import '../../widgets/glass_panel.dart';
 import '../../widgets/chat_bubble.dart';
 import '../../widgets/message_input_bar.dart';
 import '../../widgets/search_delegate.dart';
-import '../profile/profile_screen.dart';
+import 'profile_screen.dart';
+import 'package:disteg/screens/settings_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final String userName;
@@ -361,14 +362,21 @@ class _ChatScreenState extends State<ChatScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
+
                                 GestureDetector(
-                                  onTap: () {},
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                                    );
+                                  },
                                   child: Image.asset(
                                     'assets/icons/settings.png',
                                     width: 28,
                                     height: 28,
                                   ),
                                 ),
+
                                 GestureDetector(
                                   onTap: () {},
                                   child: Image.asset(

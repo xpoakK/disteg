@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/glass_button.dart';
 import '../../widgets/input_field.dart';
-import '../chat/chat_screen.dart';
+import '../chat_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
