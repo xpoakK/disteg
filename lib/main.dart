@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:ui';
+import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'package:image_picker/image_picker.dart';
 
 
 
@@ -688,6 +690,18 @@ class _ChatScreenState extends State<ChatScreen> {
     return [];
   }
 
+  Future<void> _openUserSearch() async {
+    final selectedUser = await showSearch<String?>(
+      context: context,
+      delegate: ChatSearchDelegate(searchUsers),
+    );
+
+    if (selectedUser != null) {
+      setState(() => _selectedCompanionLogin = selectedUser);
+      await _loadMessages();
+    }
+  }
+
 
   @override
   void initState() {
@@ -837,41 +851,58 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Row(
                   children: [
                     // ЛЕВАЯ ПАНЕЛЬ
-                    SizedBox(
-                      width: 70,
-                      child: _GlassPanel(
-                        borderRadius: BorderRadius.circular(35),
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 8),
-                            Expanded(
-                              child: ListView.separated(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12),
-                                itemCount: 7,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 18),
-                                itemBuilder: (_, index) {
-                                  return CircleAvatar(
-                                    radius: 22,
-                                    backgroundImage: AssetImage(
-                                      'assets/avatars/a$index.jpg',
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Icon(
-                              Icons.chat_bubble_outline,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                            const SizedBox(height: 10),
-                          ],
-                        ),
-                      ),
-                    ),
+SizedBox(
+  width: 70,
+  child: _GlassPanel(
+    borderRadius: BorderRadius.circular(35),
+    child: Column(
+      children: [
+
+        const SizedBox(height: 10),
+
+        // КНОПКА-ИКОНКА ПОИСКА
+        GestureDetector(
+  onTap: _openUserSearch,
+  child: Container(
+    width: 45,
+    height: 45,
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .15),
+      shape: BoxShape.circle,
+      image: const DecorationImage(
+        image: AssetImage('assets/icons/lupa.png'), // ← сюда кладёшь свою картинку
+        fit: BoxFit.contain,
+      ),
+    ),
+  ),
+),
+
+        const SizedBox(height: 18),
+
+        // СПИСОК АВАТАРОК ДРУЗЕЙ / ЧАТОВ
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            itemCount: 10,
+            separatorBuilder: (_, __) => const SizedBox(height: 18),
+            itemBuilder: (_, index) {
+              return CircleAvatar(
+                radius: 22,
+                backgroundImage: AssetImage('assets/avatars/a$index.jpg'),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 26),
+        const SizedBox(height: 12),
+      ],
+    ),
+  ),
+),
+
 
                     const SizedBox(width: 12),
 
@@ -1323,13 +1354,39 @@ class ChatSearchDelegate extends SearchDelegate<String?> {
 // ==========================
 //        PROFILE SCREEN
 // ==========================
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   final String userName;
 
   const ProfileScreen({super.key, required this.userName});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  File? _avatarFile;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickAvatar() async {
+    final XFile? picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    setState(() {
+      _avatarFile = File(picked.path);
+    });
+
+    // здесь потом можно загрузить файл на сервер
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final ImageProvider avatarImage = _avatarFile != null
+        ? FileImage(_avatarFile!)
+        : const AssetImage('assets/avatars/current.jpg');
+
     return Scaffold(
       body: GestureDetector(
         // свайп вправо -> чат
@@ -1340,10 +1397,11 @@ class ProfileScreen extends StatelessWidget {
               context,
               PageRouteBuilder(
                 transitionDuration: const Duration(milliseconds: 200),
-                pageBuilder: (_, __, ___) => ChatScreen(userName: userName),
+                pageBuilder: (_, __, ___) =>
+                    ChatScreen(userName: widget.userName),
                 transitionsBuilder: (_, animation, __, child) {
                   final offsetAnimation = Tween<Offset>(
-                    begin: const Offset(-1.0, 0.0), // ← резкий выезд СЛЕВА
+                    begin: const Offset(-1.0, 0.0),
                     end: Offset.zero,
                   ).animate(animation);
                   return SlideTransition(
@@ -1378,32 +1436,34 @@ class ProfileScreen extends StatelessWidget {
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           radius: 70,
-                          backgroundImage:
-                          AssetImage('assets/avatars/current.jpg'),
+                          backgroundImage: avatarImage,
                         ),
                         Positioned(
                           bottom: 4,
                           right: 4,
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: .9),
-                              boxShadow: [
-                                BoxShadow(
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                  color:
-                                  Colors.black.withValues(alpha: .25),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.add_a_photo_outlined,
-                              size: 18,
+                          child: GestureDetector(
+                            onTap: _pickAvatar, // выбор аватарки
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: .9),
+                                boxShadow: [
+                                  BoxShadow(
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                    color:
+                                        Colors.black.withValues(alpha: .25),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.add_a_photo_outlined,
+                                size: 18,
+                              ),
                             ),
                           ),
                         ),
@@ -1415,7 +1475,7 @@ class ProfileScreen extends StatelessWidget {
 
                   // Имя
                   Text(
-                    userName,
+                    widget.userName,
                     style: const TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w500,
@@ -1449,12 +1509,13 @@ class ProfileScreen extends StatelessWidget {
                     textColor: Colors.red,
                     onTap: () async {
                       final prefs = await SharedPreferences.getInstance();
-                      await prefs.clear(); // или remove('logged_in') / remove('user_name')
+                      await prefs.clear();
 
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (_) => const DisTegScreen()),
-                            (route) => false,
+                        MaterialPageRoute(
+                            builder: (_) => const DisTegScreen()),
+                        (route) => false,
                       );
                     },
                   ),
@@ -1463,68 +1524,62 @@ class ProfileScreen extends StatelessWidget {
 
                   // Нижнее меню
                   Padding(
-                      padding: const EdgeInsets.only(bottom: 3),
-                      child: _GlassPanel(
-                        height: 56,
-                        width: 250,
-                        borderRadius: BorderRadius.circular(28),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // SETTINGS PNG
-                            GestureDetector(
-                              onTap: () {
-                                // экран настроек (пока пусто)
-                              },
-                              child: Image.asset(
-                                'assets/icons/settings.png', // свой путь
-                                width: 28,
-                                height: 28,
-                              ),
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: _GlassPanel(
+                      height: 56,
+                      width: 250,
+                      borderRadius: BorderRadius.circular(28),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          GestureDetector(
+                            onTap: () {},
+                            child: Image.asset(
+                              'assets/icons/settings.png',
+                              width: 28,
+                              height: 28,
                             ),
-
-                            // CHAT PNG + анимация в чат
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.pushReplacement(
-                                  context,
-                                  PageRouteBuilder(
-                                    transitionDuration: const Duration(milliseconds: 200),
-                                    pageBuilder: (_, __, ___) => ChatScreen(userName: userName),
-                                    transitionsBuilder: (_, animation, __, child) {
-                                      final offsetAnimation = Tween<Offset>(
-                                        begin: const Offset(-1.0, 0.0), // выезд слева
-                                        end: Offset.zero,
-                                      ).animate(animation);
-                                      return SlideTransition(
-                                        position: offsetAnimation,
-                                        child: child,
-                                      );
-                                    },
-                                  ),
-                                );
-                              },
-                              child: Image.asset(
-                                'assets/icons/chat.png', // свой путь
-                                width: 28,
-                                height: 28,
-                              ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushReplacement(
+                                context,
+                                PageRouteBuilder(
+                                  transitionDuration:
+                                      const Duration(milliseconds: 200),
+                                  pageBuilder: (_, __, ___) =>
+                                      ChatScreen(userName: widget.userName),
+                                  transitionsBuilder:
+                                      (_, animation, __, child) {
+                                    final offsetAnimation = Tween<Offset>(
+                                      begin: const Offset(-1.0, 0.0),
+                                      end: Offset.zero,
+                                    ).animate(animation);
+                                    return SlideTransition(
+                                      position: offsetAnimation,
+                                      child: child,
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                            child: Image.asset(
+                              'assets/icons/chat.png',
+                              width: 28,
+                              height: 28,
                             ),
-
-                            // PROFILE PNG (мы уже на профиле)
-                            GestureDetector(
-                              onTap: () {
-                                // ничего, уже тут
-                              },
-                              child: Image.asset(
-                                'assets/icons/profile.png', // свой путь
-                                width: 28,
-                                height: 28,
-                              ),
+                          ),
+                          GestureDetector(
+                            onTap: () {},
+                            child: Image.asset(
+                              'assets/icons/profile.png',
+                              width: 28,
+                              height: 28,
                             ),
-                          ],
-                        ),
-                      )
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -1535,6 +1590,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
+
 
 class _ProfileActionButton extends StatelessWidget {
   final String text;
