@@ -4,8 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/glass_panel.dart';
 import '../../widgets/profile_action_button.dart';
-import '../chat/chat_screen.dart';
-import '../welcome/welcome_screen.dart';
+import 'chat_screen.dart';
+import 'welcome_screen.dart';
+import 'package:disteg/screens/settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userName;
@@ -175,7 +176,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           GestureDetector(
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                              );
+                            },
                             child: Image.asset(
                               'assets/icons/settings.png',
                               width: 28,
