@@ -282,15 +282,15 @@ class _SettingsGlassCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(16),
               // Полупрозрачный цвет для "стекла"
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: isDanger
-                          ? Colors.red.withOpacity(0.3)
-                          : Colors.white.withOpacity(0.2), // Светлый круг
+                          ? Colors.red.withValues(alpha: 0.3)
+                          : Colors.white.withValues(alpha: 0.2), // Светлый круг
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
