@@ -1,12 +1,18 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
+
+
+
+
+
+
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,14 +41,6 @@ class DisTegApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          },
-        ),
-      ),
       home: isLoggedIn
           ? ChatScreen(userName: savedName)
           : const DisTegScreen(),
@@ -114,7 +112,7 @@ class DisTegScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 23),
+                          const SizedBox(height: 10),
                           const Text(
                             'Новый мессенджер,\n'
                                 'собравший в себе все самые\n'
@@ -142,18 +140,8 @@ class DisTegScreen extends StatelessWidget {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                PageRouteBuilder(
-                                  transitionDuration: const Duration(milliseconds: 350),
-                                  pageBuilder: (_, __, ___) => const LoginScreen(),
-                                  transitionsBuilder: (_, animation, __, child) {
-                                    return FadeTransition(
-                                      opacity: CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeInOut,
-                                      ),
-                                      child: child,
-                                    );
-                                  },
+                                MaterialPageRoute(
+                                  builder: (_) => const LoginScreen(),
                                 ),
                               );
                             },
@@ -164,18 +152,8 @@ class DisTegScreen extends StatelessWidget {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                PageRouteBuilder(
-                                  transitionDuration: const Duration(milliseconds: 350),
-                                  pageBuilder: (_, __, ___) => const RegistrationScreen(),
-                                  transitionsBuilder: (_, animation, __, child) {
-                                    return FadeTransition(
-                                      opacity: CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeInOut,
-                                      ),
-                                      child: child,
-                                    );
-                                  },
+                                MaterialPageRoute(
+                                  builder: (_) => const RegistrationScreen(),
                                 ),
                               );
                             },
@@ -253,24 +231,22 @@ class GlassButton extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
         child: InkWell(
           onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
+          child: Container(
             width: width,
             height: height,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(33),
-              color: Colors.white.withOpacity(.08),
+              color: Colors.white.withValues(alpha: .08),
               border: Border.all(
-                color: Colors.white.withOpacity(borderOpacity),
+                color: Colors.white.withValues(alpha: borderOpacity),
                 width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
                   blurRadius: 18,
                   offset: const Offset(0, 8),
-                  color: Colors.black.withOpacity(.25),
+                  color: Colors.black.withValues(alpha: .25),
                 ),
               ],
             ),
@@ -303,8 +279,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _loginController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _loading = false;
-  bool _wrongLogin = false;
-  bool _wrongPassword = false;
 
   Future<void> _login() async {
     setState(() => _loading = true);
@@ -326,45 +300,23 @@ class _LoginScreenState extends State<LoginScreen> {
     final data = jsonDecode(response.body);
 
     if (data['success'] == true) {
-      final nameFromServer = data['name'] as String?;
-      final fallback = _loginController.text.trim();
-      final userName = (nameFromServer ?? fallback).isEmpty
-          ? 'Пользователь'
-          : (nameFromServer ?? fallback);
+      // логин как уникальный userName
+      final login = _loginController.text.trim();
+      final userName = login.isEmpty ? 'user' : login;
 
+      // сохраняем в SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('logged_in', true);
       await prefs.setString('user_name', userName);
 
+      // переходим в чат
       Navigator.pushReplacement(
         context,
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 350),
-          pageBuilder: (_, __, ___) => ChatScreen(userName: userName),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(
-              opacity: CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeInOut,
-              ),
-              child: child,
-            );
-          },
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(userName: userName),
         ),
       );
     } else {
-      setState(() {
-        _wrongLogin = true;
-        _wrongPassword = true;
-      });
-      HapticFeedback.vibrate();
-
-      await Future.delayed(const Duration(milliseconds: 500));
-      setState(() {
-        _wrongLogin = false;
-        _wrongPassword = false;
-      });
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(data['message'] ?? 'Неверные данные')),
       );
@@ -418,23 +370,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 80),
-                    ShakeWidget(
-                      shake: _wrongLogin,
-                      child: _InputField(
-                        label: 'Логин/Эл. почта',
-                        controller: _loginController,
-                        onChanged: (_) => setState(() => _wrongLogin = false),
-                      ),
+                    _InputField(
+                      label: 'Логин/Эл. почта',
+                      controller: _loginController,
                     ),
                     const SizedBox(height: 20),
-                    ShakeWidget(
-                      shake: _wrongPassword,
-                      child: _InputField(
-                        label: 'Пароль',
-                        obscure: true,
-                        controller: _passwordController,
-                        onChanged: (_) => setState(() => _wrongPassword = false),
-                      ),
+                    _InputField(
+                      label: 'Пароль',
+                      obscure: true,
+                      controller: _passwordController,
                     ),
                     const SizedBox(height: 40),
                     GlassButton.login(
@@ -453,6 +397,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+
 // ==========================
 //     REGISTRATION SCREEN
 // ==========================
@@ -470,7 +415,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _passwordController = TextEditingController();
 
   bool _loading = false;
-  bool _wrongField = false;
 
   Future<void> _register() async {
     setState(() => _loading = true);
@@ -494,36 +438,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final data = jsonDecode(response.body);
 
     if (data['success'] == true) {
-      final name = _nameController.text.trim();
-      final userName = name.isEmpty ? 'Без имени' : name;
+  // используем login как идентификатор в системе чата
+  final login = _loginController.text.trim();
+  final userName = login.isEmpty ? 'user' : login;
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('logged_in', true);
-      await prefs.setString('user_name', userName);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('logged_in', true);
+  await prefs.setString('user_name', userName);
 
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 350),
-          pageBuilder: (_, __, ___) => ChatScreen(userName: userName),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(
-              opacity: CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeInOut,
-              ),
-              child: child,
-            );
-          },
-        ),
-      );
-    } else {
-      setState(() => _wrongField = true);
-      HapticFeedback.vibrate();
-
-      await Future.delayed(const Duration(milliseconds: 500));
-      setState(() => _wrongField = false);
-
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ChatScreen(userName: userName),
+    ),
+  );
+} else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(data['message'] ?? 'Ошибка регистрации')),
       );
@@ -577,13 +506,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    ShakeWidget(
-                      shake: _wrongField,
-                      child: _InputField(
-                        label: 'Логин',
-                        controller: _loginController,
-                        onChanged: (_) => setState(() => _wrongField = false),
-                      ),
+                    _InputField(
+                      label: 'Логин',
+                      controller: _loginController,
                     ),
                     const SizedBox(height: 20),
                     _InputField(
@@ -622,13 +547,11 @@ class _InputField extends StatefulWidget {
   final String label;
   final bool obscure;
   final TextEditingController controller;
-  final ValueChanged<String>? onChanged;
 
   const _InputField({
     required this.label,
     required this.controller,
     this.obscure = false,
-    this.onChanged,
   });
 
   @override
@@ -643,7 +566,7 @@ class _InputFieldState extends State<_InputField> {
     super.initState();
     focusNode = FocusNode();
     focusNode.addListener(() {
-      setState(() {});
+      setState(() {}); // обновляет UI при фокусе/потере фокуса
     });
   }
 
@@ -659,9 +582,8 @@ class _InputFieldState extends State<_InputField> {
       focusNode: focusNode,
       controller: widget.controller,
       obscureText: widget.obscure,
-      onChanged: widget.onChanged,
       decoration: InputDecoration(
-        hintText: focusNode.hasFocus ? '' : widget.label,
+        hintText: focusNode.hasFocus ? '' : widget.label, // исчезает при фокусе
         hintStyle: TextStyle(color: Colors.grey.shade600),
         filled: true,
         fillColor: const Color(0xFFE6E6E6),
@@ -674,80 +596,32 @@ class _InputFieldState extends State<_InputField> {
   }
 }
 
-// ==========================
-//       SHAKE WIDGET
-// ==========================
-class ShakeWidget extends StatefulWidget {
-  final Widget child;
-  final bool shake;
-
-  const ShakeWidget({super.key, required this.child, required this.shake});
-
-  @override
-  State<ShakeWidget> createState() => _ShakeWidgetState();
-}
-
-class _ShakeWidgetState extends State<ShakeWidget>
-    with SingleTickerProviderStateMixin {
-
-  late AnimationController _controller;
-  late Animation<double> _offset;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 350),
-      vsync: this,
-    );
-
-    _offset = Tween<double>(begin: -8, end: 8)
-        .chain(CurveTween(curve: Curves.elasticInOut))
-        .animate(_controller);
-  }
-
-  @override
-  void didUpdateWidget(covariant ShakeWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (widget.shake) {
-      _controller.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _offset,
-      builder: (_, child) {
-        return Transform.translate(
-          offset: Offset(_offset.value * (_controller.status == AnimationStatus.forward ? 1 : -1), 0),
-          child: child,
-        );
-      },
-      child: widget.child,
-    );
-  }
-}
-
-class _ChatMessage {
+class ChatMessage {
+  final int id;
+  final String userName;
   final String text;
-  final String time;
+  final DateTime createdAt;
   final bool isMe;
 
-  _ChatMessage({
+  ChatMessage({
+    required this.id,
+    required this.userName,
     required this.text,
-    required this.time,
+    required this.createdAt,
     required this.isMe,
   });
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json, String currentUserName) {
+    return ChatMessage(
+      id: int.parse(json['id'].toString()),
+      userName: json['user_name'] as String,
+      text: json['text'] as String,
+      createdAt: DateTime.parse(json['created_at']),
+      isMe: (json['user_name'] as String) == currentUserName,
+    );
+  }
 }
+
 
 // ==========================
 //        CHAT SCREEN
@@ -765,29 +639,181 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final List<_ChatMessage> messages = [
-    _ChatMessage(
-      text: 'Когда сайт будет готов?',
-      time: '22:39',
-      isMe: false,
-    ),
-    _ChatMessage(
-      text: 'Завтра вечером',
-      time: '22:40',
-      isMe: true,
-    ),
-  ];
-
+  final List<ChatMessage> messages = [];
   final ScrollController scrollController = ScrollController();
+
+  bool _loadingMessages = false;
   bool _isSearchActive = false;
   final TextEditingController _searchController = TextEditingController();
+  Timer? _pollTimer;
+
+  String? _selectedCompanionLogin;
+
+
+  String get companionName {
+  // если пользователь выбран из поиска — показываем его
+  if (_selectedCompanionLogin != null && _selectedCompanionLogin!.isNotEmpty) {
+    return _selectedCompanionLogin!;
+  }
+
+  // иначе берём из последних сообщений не от меня
+  final others = messages.where((m) => !m.isMe);
+  if (others.isNotEmpty) {
+    return others.last.userName;
+  }
+
+  return 'Чат';
+}
+
+
+    // поиск пользователей по логину/имени через API
+  Future<List<UserData>> searchUsers(String query) async {
+    if (query.trim().isEmpty) return [];
+
+    final url = Uri.parse(
+      'https://cl918558.tw1.ru/api/get_users.php?q=$query',
+    );
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success'] == true) {
+        return (data['users'] as List)
+            .map((e) => UserData.fromJson(e))
+            .toList();
+      }
+    }
+
+    return [];
+  }
+
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMessages();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _loadMessages();
+    });
+  }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
+
+  Future<void> _loadMessages() async {
+  if (_loadingMessages) return;
+
+  // если собеседник ещё не выбран — нечего грузить
+  if (_selectedCompanionLogin == null || _selectedCompanionLogin!.isEmpty) {
+    return;
+  }
+
+  _loadingMessages = true;
+
+  try {
+    final uri = Uri.parse(
+      'https://cl918558.tw1.ru/api/get_messages.php'
+      '?from=${Uri.encodeComponent(widget.userName)}'
+      '&to=${Uri.encodeComponent(_selectedCompanionLogin!)}',
+    );
+
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success'] == true) {
+        final list = (data['messages'] as List).map<ChatMessage?>((j) {
+  // пробуем взять from_user, если нет — user_name
+  final sender = (j['from_user'] ?? j['user_name'])?.toString() ?? '';
+
+  if (sender.isEmpty) {
+    // если вообще нет отправителя — пропускаем такое сообщение
+    return null;
+  }
+
+  return ChatMessage(
+    id: int.parse(j['id'].toString()),
+    userName: sender,
+    text: j['text'] as String,
+    createdAt: DateTime.parse(j['created_at']),
+    isMe: sender == widget.userName,
+  );
+}).whereType<ChatMessage>().toList();
+
+
+        setState(() {
+          messages
+            ..clear()
+            ..addAll(list);
+        });
+
+        await Future.delayed(const Duration(milliseconds: 50));
+        if (scrollController.hasClients) {
+          scrollController.jumpTo(
+            scrollController.position.maxScrollExtent,
+          );
+        }
+      }
+    }
+  } finally {
+    _loadingMessages = false;
+  }
+}
+
+
+  Future<void> _sendMessage(String text) async {
+  if (_selectedCompanionLogin == null || _selectedCompanionLogin!.isEmpty) {
+    // никто не выбран — можно показать SnackBar
+    return;
+  }
+
+  final uri = Uri.parse('https://cl918558.tw1.ru/api/send_message.php');
+
+  try {
+    final now = DateTime.now();
+    setState(() {
+      messages.add(
+        ChatMessage(
+          id: -1,
+          userName: widget.userName,
+          text: text,
+          createdAt: now,
+          isMe: true,
+        ),
+      );
+    });
+
+    await Future.delayed(const Duration(milliseconds: 50));
+    if (scrollController.hasClients) {
+      scrollController.jumpTo(
+        scrollController.position.maxScrollExtent,
+      );
+    }
+
+    final response = await http.post(
+      uri,
+      body: {
+        'from': widget.userName,
+        'to': _selectedCompanionLogin!,
+        'text': text,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success'] == true) {
+        _loadMessages(); // перезагружаем уже из БД
+      }
+    }
+  } catch (_) {}
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -795,6 +821,7 @@ class _ChatScreenState extends State<ChatScreen> {
       body: GestureDetector(
         child: Stack(
           children: [
+            // фон
             Container(
               decoration: const BoxDecoration(
                 image: DecorationImage(
@@ -809,6 +836,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
+                    // ЛЕВАЯ ПАНЕЛЬ
                     SizedBox(
                       width: 70,
                       child: _GlassPanel(
@@ -818,19 +846,16 @@ class _ChatScreenState extends State<ChatScreen> {
                             const SizedBox(height: 8),
                             Expanded(
                               child: ListView.separated(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12),
                                 itemCount: 7,
                                 separatorBuilder: (_, __) =>
-                                const SizedBox(height: 18),
+                                    const SizedBox(height: 18),
                                 itemBuilder: (_, index) {
-                                  return AnimatedContainer(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                    child: CircleAvatar(
-                                      radius: 22,
-                                      backgroundImage: AssetImage(
-                                        'assets/avatars/a$index.jpg',
-                                      ),
+                                  return CircleAvatar(
+                                    radius: 22,
+                                    backgroundImage: AssetImage(
+                                      'assets/avatars/a$index.jpg',
                                     ),
                                   );
                                 },
@@ -850,9 +875,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
                     const SizedBox(width: 12),
 
+                    // ПРАВАЯ ЧАСТЬ
                     Expanded(
                       child: Column(
                         children: [
+                          // ВЕРХНЯЯ ПАНЕЛЬ
                           _GlassPanel(
                             height: 60,
                             borderRadius: BorderRadius.circular(30),
@@ -860,57 +887,70 @@ class _ChatScreenState extends State<ChatScreen> {
                               children: [
                                 const SizedBox(width: 14),
                                 GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _isSearchActive = !_isSearchActive;
-                                      if (!_isSearchActive) _searchController.clear();
-                                    });
-                                  },
-                                  child: const Icon(Icons.search, size: 24),
-                                ),
+  onTap: () async {
+    final selectedUser = await showSearch<String?>(
+      context: context,
+      delegate: ChatSearchDelegate(searchUsers),
+    );
+
+    if (selectedUser != null) {
+      setState(() {
+        _selectedCompanionLogin = selectedUser; // ← сохраняем выбранного
+      });
+
+      debugPrint('Выбран пользователь: $selectedUser');
+      // здесь позже можно подгружать другой чат по selectedUser
+      await _loadMessages();
+    }
+  },
+  child: const Icon(Icons.search, size: 24),
+),
+
+
+
                                 const SizedBox(width: 10),
                                 AnimatedContainer(
-                                  duration: const Duration(milliseconds: 350),
-                                  curve: Curves.easeInOut,
+                                  duration:
+                                      const Duration(milliseconds: 300),
                                   width: _isSearchActive ? 200 : 0,
                                   child: _isSearchActive
                                       ? TextField(
-                                    controller: _searchController,
-                                    style: const TextStyle(color: Colors.white),
-                                    decoration: const InputDecoration(
-                                      hintText: 'Поиск...',
-                                      hintStyle: TextStyle(color: Colors.white54),
-                                      border: InputBorder.none,
-                                    ),
-                                  )
+                                          controller: _searchController,
+                                          style: const TextStyle(
+                                              color: Colors.white),
+                                          decoration:
+                                              const InputDecoration(
+                                            hintText: 'Поиск...',
+                                            hintStyle: TextStyle(
+                                                color: Colors.white54),
+                                            border: InputBorder.none,
+                                          ),
+                                        )
                                       : null,
                                 ),
                                 if (!_isSearchActive)
-                                  Expanded(
-                                    child: AnimatedOpacity(
-                                      duration: const Duration(milliseconds: 300),
-                                      opacity: _isSearchActive ? 0 : 1,
-                                      child: Text(
-                                        widget.userName,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+  Expanded(
+    child: Text(
+      companionName,
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+  ),
+
                                 const CircleAvatar(
                                   radius: 20,
-                                  backgroundImage: AssetImage('assets/avatars/current.jpg'),
+                                  backgroundImage: AssetImage(
+                                      'assets/avatars/current.jpg'),
                                 ),
                                 const SizedBox(width: 14),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 12),
 
+                          // ЧАТ
                           Expanded(
                             child: _GlassPanel(
                               borderRadius: BorderRadius.circular(34),
@@ -923,16 +963,17 @@ class _ChatScreenState extends State<ChatScreen> {
                                       itemCount: messages.length,
                                       itemBuilder: (_, i) {
                                         final m = messages[i];
+                                        final timeStr =
+                                            '${m.createdAt.hour.toString().padLeft(2, '0')}:${m.createdAt.minute.toString().padLeft(2, '0')}';
+
                                         return Padding(
-                                          padding: const EdgeInsets.only(bottom: 12),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                            child: _ChatBubble(
-                                              text: m.text,
-                                              time: m.time,
-                                              isMe: m.isMe,
-                                            ),
+                                          padding:
+                                              const EdgeInsets.only(
+                                                  bottom: 12),
+                                          child: _ChatBubble(
+                                            text: m.text,
+                                            time: timeStr,
+                                            isMe: m.isMe,
                                           ),
                                         );
                                       },
@@ -940,22 +981,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   ),
                                   const SizedBox(height: 12),
                                   _MessageInputBar(
-                                    onSend: (text) {
-                                      final now = TimeOfDay.now();
-                                      final time = '${now.hour}:${now.minute.toString().padLeft(2, '0')}';
-
-                                      setState(() {
-                                        messages.add(_ChatMessage(
-                                          text: text,
-                                          time: time,
-                                          isMe: true,
-                                        ));
-                                      });
-
-                                      Future.delayed(const Duration(milliseconds: 50), () {
-                                        scrollController.jumpTo(scrollController.position.maxScrollExtent);
-                                      });
-                                    },
+                                    onSend: _sendMessage,
                                   ),
                                 ],
                               ),
@@ -964,16 +990,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
                           const SizedBox(height: 14),
 
+                          // НИЖНЕЕ МЕНЮ
                           _GlassPanel(
                             height: 56,
                             borderRadius: BorderRadius.circular(28),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceEvenly,
                               children: [
+                                // SETTINGS PNG
                                 GestureDetector(
-                                  onTap: () {
-
-                                  },
+                                  onTap: () {},
                                   child: Image.asset(
                                     'assets/icons/settings.png',
                                     width: 28,
@@ -981,6 +1008,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   ),
                                 ),
 
+                                // CHAT PNG
                                 GestureDetector(
                                   onTap: () {},
                                   child: Image.asset(
@@ -990,20 +1018,29 @@ class _ChatScreenState extends State<ChatScreen> {
                                   ),
                                 ),
 
+                                // PROFILE PNG — переход в профиль
                                 GestureDetector(
                                   onTap: () {
                                     Navigator.pushReplacement(
                                       context,
                                       PageRouteBuilder(
-                                        transitionDuration: const Duration(milliseconds: 350),
+                                        transitionDuration:
+                                            const Duration(
+                                                milliseconds: 250),
                                         pageBuilder: (_, __, ___) =>
-                                            ProfileScreen(userName: widget.userName),
-                                        transitionsBuilder: (_, animation, __, child) {
-                                          return FadeTransition(
-                                            opacity: CurvedAnimation(
-                                              parent: animation,
-                                              curve: Curves.easeInOut,
-                                            ),
+                                            ProfileScreen(
+                                          userName: widget.userName,
+                                        ),
+                                        transitionsBuilder:
+                                            (_, animation, __, child) {
+                                          final offsetAnimation =
+                                              Tween<Offset>(
+                                            begin:
+                                                const Offset(1.0, 0.0),
+                                            end: Offset.zero,
+                                          ).animate(animation);
+                                          return SlideTransition(
+                                            position: offsetAnimation,
                                             child: child,
                                           );
                                         },
@@ -1032,6 +1069,8 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }
+
+
 
 /// Универсальная стеклянная панель
 class _GlassPanel extends StatelessWidget {
@@ -1066,17 +1105,15 @@ class _GlassPanel extends StatelessWidget {
       borderRadius: borderRadius,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeInOut,
+        child: Container(
           height: height,
           width: width,
           padding: padding ?? const EdgeInsets.all(8),
           decoration: BoxDecoration(
             borderRadius: borderRadius,
-            color: Colors.white.withOpacity(backgroundOpacity),
+            color: Colors.white.withValues(alpha: backgroundOpacity),
             border: Border.all(
-              color: borderColor.withOpacity(borderOpacity),
+              color: borderColor.withValues(alpha: borderOpacity),
               width: borderWidth,
             ),
           ),
@@ -1093,6 +1130,7 @@ class _ChatBubble extends StatelessWidget {
   final bool isMe;
 
   const _ChatBubble({
+    super.key,
     required this.text,
     required this.time,
     required this.isMe,
@@ -1113,13 +1151,11 @@ class _ChatBubble extends StatelessWidget {
       alignment: alignment,
       child: Column(
         crossAxisAlignment:
-        isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeInOut,
+          Container(
             padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: const Color(0xFF707070),
               borderRadius: borderRadius,
@@ -1133,15 +1169,11 @@ class _ChatBubble extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          AnimatedOpacity(
-            opacity: 1,
-            duration: const Duration(milliseconds: 300),
-            child: Text(
-              time,
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.black.withOpacity(.6),
-              ),
+          Text(
+            time,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.black.withValues(alpha: .6),
             ),
           ),
         ],
@@ -1149,6 +1181,7 @@ class _ChatBubble extends StatelessWidget {
     );
   }
 }
+
 
 class _MessageInputBar extends StatefulWidget {
   final Function(String) onSend;
@@ -1166,15 +1199,14 @@ class _MessageInputBarState extends State<_MessageInputBar> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    widget.onSend(text);
-    _controller.clear();
+    widget.onSend(text); // передаём сообщение наверх
+
+    _controller.clear(); // очищаем поле после отправки
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeInOut,
+    return Container(
       height: 48,
       decoration: BoxDecoration(
         color: Colors.grey.shade400,
@@ -1203,9 +1235,7 @@ class _MessageInputBarState extends State<_MessageInputBar> {
           ),
           GestureDetector(
             onTap: _send,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
+            child: Container(
               width: 40,
               height: 40,
               margin: const EdgeInsets.only(right: 6),
@@ -1226,48 +1256,69 @@ class _MessageInputBarState extends State<_MessageInputBar> {
   }
 }
 
-// ==========================
-//    ПОИСКОВЫЙ ДЕЛЕГАТ
-// ==========================
-class ChatSearchDelegate extends SearchDelegate {
-  final List<_ChatMessage> messages;
+class UserData {
+  final String login;
+  final String name;
 
-  ChatSearchDelegate(this.messages);
+  UserData({required this.login, required this.name});
+
+  factory UserData.fromJson(Map<String, dynamic> json) {
+    return UserData(
+      login: json['login'],
+      name: json['name'],
+    );
+  }
+}
+
+
+// ==========================
+//    ПОИСК ПО USERNAME
+// ==========================
+class ChatSearchDelegate extends SearchDelegate<String?> {
+  final Future<List<UserData>> Function(String) onSearch;
+
+  ChatSearchDelegate(this.onSearch);
 
   @override
   List<Widget>? buildActions(BuildContext context) => [
-    IconButton(
-      icon: const Icon(Icons.clear),
-      onPressed: () => query = '',
-    )
-  ];
+        IconButton(onPressed: () => query = '', icon: const Icon(Icons.clear)),
+      ];
 
   @override
   Widget? buildLeading(BuildContext context) => IconButton(
-    icon: const Icon(Icons.arrow_back),
-    onPressed: () => close(context, null),
-  );
+        onPressed: () => close(context, null),
+        icon: const Icon(Icons.arrow_back),
+      );
 
   @override
   Widget buildResults(BuildContext context) {
-    final results = messages.where(
-          (m) => m.text.toLowerCase().contains(query.toLowerCase()),
-    );
+    return FutureBuilder<List<UserData>>(
+      future: onSearch(query),
+      builder: (context, snap) {
+        if (!snap.hasData) return const Center(child: CircularProgressIndicator());
 
-    return ListView(
-      children: results
-          .map((m) => ListTile(
-        title: Text(m.text),
-        subtitle: Text(m.time),
-        trailing: m.isMe ? const Text('Я') : const Text('Друг'),
-      ))
-          .toList(),
+        final users = snap.data!;
+        if (users.isEmpty) return const Center(child: Text("Пользователи не найдены"));
+
+        return ListView(
+          children: users.map((u) {
+            return ListTile(
+              title: Text(u.login),
+              subtitle: Text(u.name),
+              onTap: () => close(context, u.login),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
   @override
   Widget buildSuggestions(BuildContext context) => buildResults(context);
 }
+
+
+
 
 // ==========================
 //        PROFILE SCREEN
@@ -1281,20 +1332,22 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: GestureDetector(
+        // свайп вправо -> чат
         onHorizontalDragEnd: (details) {
           if (details.primaryVelocity != null &&
               details.primaryVelocity! > 0) {
             Navigator.pushReplacement(
               context,
               PageRouteBuilder(
-                transitionDuration: const Duration(milliseconds: 350),
+                transitionDuration: const Duration(milliseconds: 200),
                 pageBuilder: (_, __, ___) => ChatScreen(userName: userName),
                 transitionsBuilder: (_, animation, __, child) {
-                  return FadeTransition(
-                    opacity: CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeInOut,
-                    ),
+                  final offsetAnimation = Tween<Offset>(
+                    begin: const Offset(-1.0, 0.0), // ← резкий выезд СЛЕВА
+                    end: Offset.zero,
+                  ).animate(animation);
+                  return SlideTransition(
+                    position: offsetAnimation,
                     child: child,
                   );
                 },
@@ -1304,6 +1357,7 @@ class ProfileScreen extends StatelessWidget {
         },
         child: Stack(
           children: [
+            // Фон
             Container(
               decoration: const BoxDecoration(
                 image: DecorationImage(
@@ -1313,40 +1367,37 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
 
+            // Контент
             SafeArea(
               child: Column(
                 children: [
                   const SizedBox(height: 40),
 
+                  // Аватар
                   Center(
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 350),
-                          curve: Curves.easeInOut,
-                          child: const CircleAvatar(
-                            radius: 70,
-                            backgroundImage:
-                            AssetImage('assets/avatars/current.jpg'),
-                          ),
+                        const CircleAvatar(
+                          radius: 70,
+                          backgroundImage:
+                          AssetImage('assets/avatars/current.jpg'),
                         ),
                         Positioned(
                           bottom: 4,
                           right: 4,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
+                          child: Container(
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(.9),
+                              color: Colors.white.withValues(alpha: .9),
                               boxShadow: [
                                 BoxShadow(
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
-                                  color: Colors.black.withOpacity(.25),
+                                  color:
+                                  Colors.black.withValues(alpha: .25),
                                 ),
                               ],
                             ),
@@ -1362,21 +1413,19 @@ class ProfileScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  AnimatedOpacity(
-                    opacity: 1,
-                    duration: const Duration(milliseconds: 350),
-                    child: Text(
-                      userName,
-                      style: const TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
+                  // Имя
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
                   ),
 
                   const SizedBox(height: 40),
 
+                  // Кнопки действий
                   _ProfileActionButton(
                     text: 'Редактировать профиль',
                     onTap: () {},
@@ -1400,23 +1449,11 @@ class ProfileScreen extends StatelessWidget {
                     textColor: Colors.red,
                     onTap: () async {
                       final prefs = await SharedPreferences.getInstance();
-                      await prefs.clear();
+                      await prefs.clear(); // или remove('logged_in') / remove('user_name')
 
                       Navigator.pushAndRemoveUntil(
                         context,
-                        PageRouteBuilder(
-                          transitionDuration: const Duration(milliseconds: 350),
-                          pageBuilder: (_, __, ___) => const DisTegScreen(),
-                          transitionsBuilder: (_, animation, __, child) {
-                            return FadeTransition(
-                              opacity: CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeInOut,
-                              ),
-                              child: child,
-                            );
-                          },
-                        ),
+                        MaterialPageRoute(builder: (_) => const DisTegScreen()),
                             (route) => false,
                       );
                     },
@@ -1424,6 +1461,7 @@ class ProfileScreen extends StatelessWidget {
 
                   const Spacer(),
 
+                  // Нижнее меню
                   Padding(
                       padding: const EdgeInsets.only(bottom: 3),
                       child: _GlassPanel(
@@ -1433,30 +1471,33 @@ class ProfileScreen extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
+                            // SETTINGS PNG
                             GestureDetector(
                               onTap: () {
-
+                                // экран настроек (пока пусто)
                               },
                               child: Image.asset(
-                                'assets/icons/settings.png',
+                                'assets/icons/settings.png', // свой путь
                                 width: 28,
                                 height: 28,
                               ),
                             ),
 
+                            // CHAT PNG + анимация в чат
                             GestureDetector(
                               onTap: () {
                                 Navigator.pushReplacement(
                                   context,
                                   PageRouteBuilder(
-                                    transitionDuration: const Duration(milliseconds: 350),
+                                    transitionDuration: const Duration(milliseconds: 200),
                                     pageBuilder: (_, __, ___) => ChatScreen(userName: userName),
                                     transitionsBuilder: (_, animation, __, child) {
-                                      return FadeTransition(
-                                        opacity: CurvedAnimation(
-                                          parent: animation,
-                                          curve: Curves.easeInOut,
-                                        ),
+                                      final offsetAnimation = Tween<Offset>(
+                                        begin: const Offset(-1.0, 0.0), // выезд слева
+                                        end: Offset.zero,
+                                      ).animate(animation);
+                                      return SlideTransition(
+                                        position: offsetAnimation,
                                         child: child,
                                       );
                                     },
@@ -1464,16 +1505,19 @@ class ProfileScreen extends StatelessWidget {
                                 );
                               },
                               child: Image.asset(
-                                'assets/icons/chat.png',
+                                'assets/icons/chat.png', // свой путь
                                 width: 28,
                                 height: 28,
                               ),
                             ),
 
+                            // PROFILE PNG (мы уже на профиле)
                             GestureDetector(
-                              onTap: () {},
+                              onTap: () {
+                                // ничего, уже тут
+                              },
                               child: Image.asset(
-                                'assets/icons/profile.png',
+                                'assets/icons/profile.png', // свой путь
                                 width: 28,
                                 height: 28,
                               ),
@@ -1511,24 +1555,22 @@ class _ProfileActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeInOut,
+          child: Container(
             width: 280,
             height: 52,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(30),
-              color: Colors.white.withOpacity(.25),
+              color: Colors.white.withValues(alpha: .25),
               border: Border.all(
-                color: Colors.white.withOpacity(.8),
+                color: Colors.white.withValues(alpha: .8),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  blurRadius: 18,
+                  blurRadius: 15,
                   offset: const Offset(0, 8),
-                  color: Colors.black.withOpacity(.25),
+                  color: Colors.black.withValues(alpha: .15),
                 ),
               ],
             ),
@@ -1547,51 +1589,3 @@ class _ProfileActionButton extends StatelessWidget {
 }
 
 
-// ==========================
-//      EDIT FIELD SCREEN
-// ==========================
-class EditFieldScreen extends StatelessWidget {
-  final String title;
-  final String hint;
-
-  const EditFieldScreen({super.key, required this.title, required this.hint});
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = TextEditingController();
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Text(title),
-      ),
-      backgroundColor: const Color(0xFF0D0D0D),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextField(
-              controller: controller,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: hint,
-                labelStyle: const TextStyle(color: Colors.white70),
-              ),
-            ),
-            const SizedBox(height: 30),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeInOut,
-              child: ElevatedButton(
-                onPressed: () {
-                  // сохранить изменение
-                },
-                child: const Text("Сохранить"),
-              ),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
