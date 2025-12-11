@@ -11,7 +11,6 @@ import '../../widgets/message_input_bar.dart';
 import '../../widgets/search_delegate.dart';
 import 'profile_screen.dart';
 
-
 class ChatScreen extends StatefulWidget {
   final String userName;
 
@@ -384,13 +383,48 @@ class _ChatScreenState extends State<ChatScreen> {
                                         final timeStr =
                                             '${m.createdAt.hour.toString().padLeft(2, '0')}:${m.createdAt.minute.toString().padLeft(2, '0')}';
 
-                                        return Padding(
-                                          padding: const EdgeInsets.only(bottom: 12),
-                                          child: ChatBubble(
-                                            text: m.text,
-                                            time: timeStr,
-                                            isMe: m.isMe,
-                                          ),
+                                        bool showDate = false;
+                                        if (i == 0) {
+                                          showDate = true;
+                                        } else {
+                                          final prevM = messages[i - 1];
+                                          if (!m.isSameDay(prevM)) {
+                                            showDate = true;
+                                          }
+                                        }
+
+                                        return Column(
+                                          children: [
+                                            if (showDate)
+                                              Padding(
+                                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                                child: Center(
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black.withValues(alpha: 0.2),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    child: Text(
+                                                      m.formattedDate,
+                                                      style: const TextStyle(
+                                                        color: Colors.white70,
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            Padding(
+                                              padding: const EdgeInsets.only(bottom: 12),
+                                              child: ChatBubble(
+                                                text: m.text,
+                                                time: timeStr,
+                                                isMe: m.isMe,
+                                              ),
+                                            ),
+                                          ],
                                         );
                                       },
                                     ),

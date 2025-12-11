@@ -25,4 +25,14 @@ class ChatMessage {
       avatarUrl: json['avatar_url'] as String?,
     );
   }
+
+  bool isSameDay(ChatMessage other) {
+    return createdAt.year == other.createdAt.year &&
+        createdAt.month == other.createdAt.month &&
+        createdAt.day == other.createdAt.day;
+  }
+
+  String get formattedDate {
+    return '${createdAt.day.toString().padLeft(2, '0')}.${createdAt.month.toString().padLeft(2, '0')}.${createdAt.year}';
+  }
 }
