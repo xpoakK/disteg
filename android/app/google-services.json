@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "181079291116",
+    "project_id": "distag-53040",
+    "storage_bucket": "distag-53040.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:181079291116:android:58dec620f5d45482fa61c9",
+        "android_client_info": {
+          "package_name": "com.example.dis_tag_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1zIFHi546ynR3kD7pvzyYqMPeW5w1jkM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
