@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'screens/home_screen.dart';
 import 'screens/chat_screen.dart';
-import 'screens/welcome_screen.dart';
+import 'utils/constants.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Загрузка локальных данных
   final prefs = await SharedPreferences.getInstance();
   final isLoggedIn = prefs.getBool('logged_in') ?? false;
   final savedName = prefs.getString('user_name') ?? 'Пользователь';
@@ -32,7 +34,7 @@ class DisTegApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: isLoggedIn
           ? ChatScreen(userName: savedName)
-          : const WelcomeScreen(),
+          : const HomeScreen(),
     );
   }
 }

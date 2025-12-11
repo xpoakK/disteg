@@ -6,6 +6,7 @@ class InputField extends StatefulWidget {
   final TextEditingController controller;
 
   const InputField({
+    super.key,
     required this.label,
     required this.controller,
     this.obscure = false,

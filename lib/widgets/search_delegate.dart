@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/chat_message.dart';
 import '../models/user_data.dart';
+import '../models/chat_message.dart';
 
 class ChatSearchDelegate extends SearchDelegate<UserData?> {
   final Future<List<UserData>> Function(String) onSearch;
@@ -23,23 +23,16 @@ class ChatSearchDelegate extends SearchDelegate<UserData?> {
     return FutureBuilder<List<UserData>>(
       future: onSearch(query),
       builder: (context, snap) {
-        if (!snap.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
+        if (!snap.hasData) return const Center(child: CircularProgressIndicator());
 
         final users = snap.data!;
-        if (users.isEmpty) {
-          return const Center(child: Text("Пользователи не найдены"));
-        }
+        if (users.isEmpty) return const Center(child: Text("Пользователи не найдены"));
 
         return ListView(
           children: users.map((u) {
             return ListTile(
-              leading: (u.avatarUrl != null && u.avatarUrl!.isNotEmpty)
-                  ? CircleAvatar(backgroundImage: NetworkImage(u.avatarUrl!))
-                  : const CircleAvatar(child: Icon(Icons.person)),
               title: Text(u.login),
-              subtitle: Text(u.name),
+              subtitle: Text(u.name ?? ''),
               onTap: () => close(context, u),
             );
           }).toList(),
@@ -51,7 +44,6 @@ class ChatSearchDelegate extends SearchDelegate<UserData?> {
   @override
   Widget buildSuggestions(BuildContext context) => buildResults(context);
 }
-
 
 class MessageSearchDelegate extends SearchDelegate<ChatMessage?> {
   final List<ChatMessage> messages;

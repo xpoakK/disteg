@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
-import 'dart:ui'; // <<< НУЖЕН ДЛЯ ЭФФЕКТА РАЗМЫТИЯ (Glassmorphism)
+import 'dart:ui';
+
+import '../widgets/glass_panel.dart';
+import 'chat_screen.dart';
+import 'profile_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final String userName;
+
+  const SettingsScreen({
+    super.key,
+    required this.userName,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Контроллеры и логика диалогов остаются без изменений
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -23,8 +31,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _bioController.dispose();
     super.dispose();
   }
-
-  // --- ЛОГИКА ДИАЛОГОВ (Осталась прежней) ---
 
   Future<void> _showEditDialog({
     required String title,
@@ -109,7 +115,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               child: const Text('Удалить'),
               onPressed: () {
-                // TODO: Логика удаления
                 print("Аккаунт удален");
                 Navigator.of(context).pop();
               },
@@ -119,8 +124,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
     );
   }
-
-  // --- UI ---
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +144,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: Stack(
         children: [
-          // 1. ФОН (как в ProfileScreen)
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
@@ -151,7 +153,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          // 2. КОНТЕНТ
           SafeArea(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -160,7 +161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 _buildSectionHeader('Аккаунт'),
 
-                _SettingsGlassCard( // ИСПОЛЬЗУЕМ НОВУЮ КАРТОЧКУ
+                _SettingsGlassCard(
                   icon: Icons.person_outline,
                   title: 'Имя пользователя',
                   subtitle: 'Изменить отображаемое имя',
@@ -174,7 +175,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 const SizedBox(height: 12),
 
-                _SettingsGlassCard( // ИСПОЛЬЗУЕМ НОВУЮ КАРТОЧКУ
+                _SettingsGlassCard(
                   icon: Icons.email_outlined,
                   title: 'Эл. почта',
                   subtitle: 'user@example.com',
@@ -188,7 +189,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 const SizedBox(height: 12),
 
-                _SettingsGlassCard( // ИСПОЛЬЗУЕМ НОВУЮ КАРТОЧКУ
+                _SettingsGlassCard(
                   icon: Icons.lock_outline,
                   title: 'Пароль',
                   subtitle: '********',
@@ -203,7 +204,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 const SizedBox(height: 12),
 
-                _SettingsGlassCard( // ИСПОЛЬЗУЕМ НОВУЮ КАРТОЧКУ
+                _SettingsGlassCard(
                   icon: Icons.edit_note,
                   title: 'Описание профиля',
                   subtitle: 'Пару слов о себе',
@@ -219,22 +220,109 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 30),
                 _buildSectionHeader('Опасная зона', isDanger: true),
 
-                _SettingsGlassCard( // ИСПОЛЬЗУЕМ НОВУЮ КАРТОЧКУ
+                _SettingsGlassCard(
                   icon: Icons.delete_forever_outlined,
                   title: 'Удалить аккаунт',
                   subtitle: 'Навсегда стереть данные',
                   isDanger: true,
                   onTap: _showDeleteConfirmation,
                 ),
+                
+                const SizedBox(height: 80),
               ],
             ),
+          ),
+          
+          Align(
+             alignment: Alignment.bottomCenter,
+             child: Padding(
+                padding: const EdgeInsets.only(bottom: 55),
+                child: GlassPanel(
+                  height: 56,
+                  width: 250,
+                  borderRadius: BorderRadius.circular(28),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      GestureDetector(
+                        onTap: () {},
+                        child: Image.asset(
+                          'assets/icons/settings.png',
+                          width: 28,
+                          height: 28,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            PageRouteBuilder(
+                              transitionDuration: const Duration(milliseconds: 300),
+                              pageBuilder: (_, __, ___) =>
+                                  ChatScreen(userName: widget.userName),
+                              transitionsBuilder: (_, animation, __, child) {
+                                final offsetAnimation = Tween<Offset>(
+                                  begin: const Offset(1.0, 0.0), // Changed to 1.0 (From Right)
+                                  end: Offset.zero,
+                                ).animate(CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeInOut,
+                                ));
+                                return SlideTransition(
+                                  position: offsetAnimation,
+                                  child: child,
+                                );
+                              },
+                            ),
+                          );
+                        },
+                        child: Image.asset(
+                          'assets/icons/chat.png',
+                          width: 28,
+                          height: 28,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                             Navigator.pushReplacement(
+                              context,
+                              PageRouteBuilder(
+                                transitionDuration: const Duration(milliseconds: 300),
+                                pageBuilder: (_, __, ___) => ProfileScreen(
+                                  userName: widget.userName,
+                                ),
+                                transitionsBuilder: (_, animation, __, child) {
+                                  final offsetAnimation = Tween<Offset>(
+                                    begin: const Offset(1.0, 0.0), // Changed to 1.0 (From Right)
+                                    end: Offset.zero,
+                                  ).animate(CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.easeInOut,
+                                  ));
+                                  return SlideTransition(
+                                    position: offsetAnimation,
+                                    child: child,
+                                  );
+                                },
+                              ),
+                            );
+                        },
+                        child: Image.asset(
+                          'assets/icons/profile.png',
+                          width: 28,
+                          height: 28,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+             ),
           ),
         ],
       ),
     );
   }
 
-  // Вспомогательный виджет для заголовков секций (без изменений)
   Widget _buildSectionHeader(String title, {bool isDanger = false}) {
     return Padding(
       padding: const EdgeInsets.only(left: 8, bottom: 10),
@@ -251,14 +339,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-// НОВЫЙ ВИДЖЕТ: Карточка с эффектом Glassmorphism
 class _SettingsGlassCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
   final bool isDanger;
-  final double blurStrength = 10.0; // Сила размытия
+  final double blurStrength = 10.0;
 
   const _SettingsGlassCard({
     required this.icon,
@@ -275,13 +362,12 @@ class _SettingsGlassCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: ClipRRect( // Обрезает углы перед размытием
+        child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter( // Применяет размытие к фону
+          child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: blurStrength, sigmaY: blurStrength),
             child: Container(
               padding: const EdgeInsets.all(16),
-              // Полупрозрачный цвет для "стекла"
               color: Colors.white.withValues(alpha: 0.15),
               child: Row(
                 children: [
@@ -290,12 +376,12 @@ class _SettingsGlassCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isDanger
                           ? Colors.red.withValues(alpha: 0.3)
-                          : Colors.white.withValues(alpha: 0.2), // Светлый круг
+                          : Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       icon,
-                      color: isDanger ? Colors.redAccent : Colors.white, // Иконка белая/красная
+                      color: isDanger ? Colors.redAccent : Colors.white,
                       size: 24,
                     ),
                   ),
@@ -309,7 +395,7 @@ class _SettingsGlassCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: isDanger ? Colors.redAccent : Colors.white, // Текст белый/красный
+                            color: isDanger ? Colors.redAccent : Colors.white,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -317,7 +403,7 @@ class _SettingsGlassCard extends StatelessWidget {
                           subtitle,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white70, // Субтитр светло-белый
+                            color: Colors.white70,
                           ),
                         ),
                       ],

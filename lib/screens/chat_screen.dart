@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:disteg/screens/settings_screen.dart';
+import 'package:dis_tag_app/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../models/chat_message.dart';
@@ -10,6 +10,7 @@ import '../../widgets/chat_bubble.dart';
 import '../../widgets/message_input_bar.dart';
 import '../../widgets/search_delegate.dart';
 import 'profile_screen.dart';
+
 
 class ChatScreen extends StatefulWidget {
   final String userName;
@@ -96,6 +97,17 @@ class _ChatScreenState extends State<ChatScreen> {
         _selectedCompanion = selectedUser;
       });
       await _loadMessages();
+    }
+  }
+
+  Future<void> _openMessageSearch() async {
+    final selectedMessage = await showSearch<ChatMessage?>(
+      context: context,
+      delegate: MessageSearchDelegate(messages),
+    );
+
+    if (selectedMessage != null) {
+      // Scroll to selected message if needed
     }
   }
 
@@ -228,7 +240,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return const CircleAvatar(
       radius: 20,
-      backgroundImage: AssetImage('assets/avatars/current.jpg'),
+      backgroundImage: AssetImage('assets/avatars/no-avatar-user.png'),
     );
   }
 
@@ -267,11 +279,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: .15),
                                   shape: BoxShape.circle,
-                                  image: const DecorationImage(
-                                    image: AssetImage('assets/icons/lupa.png'),
-                                    fit: BoxFit.contain,
-                                  ),
                                 ),
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.search, color: Colors.white, size: 26),
                               ),
                             ),
                             const SizedBox(height: 18),
@@ -285,7 +295,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   final ImageProvider avatar =
                                   (u.avatarUrl != null && u.avatarUrl!.isNotEmpty)
                                       ? NetworkImage(u.avatarUrl!)
-                                      : const AssetImage('assets/avatars/current.jpg');
+                                      : const AssetImage('assets/avatars/no-avatar-user.png');
                                   return GestureDetector(
                                     onTap: () async {
                                       setState(() {
@@ -322,7 +332,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               children: [
                                 const SizedBox(width: 14),
                                 GestureDetector(
-                                  onTap: _openUserSearch,
+                                  onTap: _openMessageSearch,
                                   child: const Icon(Icons.search, size: 24),
                                 ),
                                 const SizedBox(width: 10),
@@ -400,11 +410,28 @@ class _ChatScreenState extends State<ChatScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
+
                                 GestureDetector(
                                   onTap: () {
                                     Navigator.push(
                                       context,
-                                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                                      PageRouteBuilder(
+                                        transitionDuration: const Duration(milliseconds: 300),
+                                        pageBuilder: (_, __, ___) => SettingsScreen(userName: widget.userName),
+                                        transitionsBuilder: (_, animation, __, child) {
+                                          final offsetAnimation = Tween<Offset>(
+                                            begin: const Offset(-1.0, 0.0),
+                                            end: Offset.zero,
+                                          ).animate(CurvedAnimation(
+                                            parent: animation,
+                                            curve: Curves.easeInOut,
+                                          ));
+                                          return SlideTransition(
+                                            position: offsetAnimation,
+                                            child: child,
+                                          );
+                                        },
+                                      ),
                                     );
                                   },
                                   child: Image.asset(
@@ -413,6 +440,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     height: 28,
                                   ),
                                 ),
+
                                 GestureDetector(
                                   onTap: () {},
                                   child: Image.asset(
@@ -426,7 +454,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     Navigator.pushReplacement(
                                       context,
                                       PageRouteBuilder(
-                                        transitionDuration: const Duration(milliseconds: 250),
+                                        transitionDuration: const Duration(milliseconds: 300),
                                         pageBuilder: (_, __, ___) => ProfileScreen(
                                           userName: widget.userName,
                                         ),
@@ -434,7 +462,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                           final offsetAnimation = Tween<Offset>(
                                             begin: const Offset(1.0, 0.0),
                                             end: Offset.zero,
-                                          ).animate(animation);
+                                          ).animate(CurvedAnimation(
+                                            parent: animation,
+                                            curve: Curves.easeInOut,
+                                          ));
                                           return SlideTransition(
                                             position: offsetAnimation,
                                             child: child,

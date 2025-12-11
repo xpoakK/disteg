@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../widgets/glass_button.dart';
-import 'auth/login_screen.dart';
-import 'auth/registration_screen.dart';
+import 'package:flutter/rendering.dart';
+import '../widgets/glass_button.dart';
+import 'login_screen.dart';
+import 'registration_screen.dart';
 
-class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key});
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

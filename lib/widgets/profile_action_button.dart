@@ -1,5 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'dart:ui';
 
 class ProfileActionButton extends StatelessWidget {
   final String text;
@@ -7,6 +7,7 @@ class ProfileActionButton extends StatelessWidget {
   final Color textColor;
 
   const ProfileActionButton({
+    super.key,
     required this.text,
     required this.onTap,
     this.textColor = Colors.white,

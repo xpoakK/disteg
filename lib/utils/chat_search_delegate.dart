@@ -1,0 +1,52 @@
+import 'package:flutter/material.dart';
+import '../models/user_data.dart';
+
+class ChatSearchDelegate extends SearchDelegate<UserData?> {
+  final Future<List<UserData>> Function(String) onSearch;
+
+  ChatSearchDelegate(this.onSearch);
+
+  @override
+  List<Widget>? buildActions(BuildContext context) => [
+    IconButton(onPressed: () => query = '', icon: const Icon(Icons.clear)),
+  ];
+
+  @override
+  Widget? buildLeading(BuildContext context) => IconButton(
+    onPressed: () => close(context, null),
+    icon: const Icon(Icons.arrow_back),
+  );
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return FutureBuilder<List<UserData>>(
+      future: onSearch(query),
+      builder: (context, snap) {
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final users = snap.data!;
+        if (users.isEmpty) {
+          return const Center(child: Text("Пользователи не найдены"));
+        }
+
+        return ListView(
+          children: users.map((u) {
+            return ListTile(
+              leading: (u.avatarUrl != null && u.avatarUrl!.isNotEmpty)
+                  ? CircleAvatar(backgroundImage: NetworkImage(u.avatarUrl!))
+                  : const CircleAvatar(child: Icon(Icons.person)),
+              title: Text(u.login),
+              subtitle: Text(u.login),
+              onTap: () => close(context, u),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) => buildResults(context);
+}
