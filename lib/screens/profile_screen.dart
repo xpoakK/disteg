@@ -180,7 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           GestureDetector(
                             onTap: () {
-                              Navigator.push(
+                              Navigator.pushReplacement(
                                 context,
                                 PageRouteBuilder(
                                   transitionDuration: const Duration(milliseconds: 300),

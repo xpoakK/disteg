@@ -142,155 +142,137 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/chat_ground.png'),
-                fit: BoxFit.cover,
+      body: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          if (details.primaryVelocity != null &&
+              details.primaryVelocity! < 0) {
+            Navigator.pushReplacement(
+              context,
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 300),
+                pageBuilder: (_, __, ___) =>
+                    ChatScreen(userName: widget.userName),
+                transitionsBuilder: (_, animation, __, child) {
+                  final offsetAnimation = Tween<Offset>(
+                    begin: const Offset(1.0, 0.0),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeInOut,
+                  ));
+                  return SlideTransition(
+                    position: offsetAnimation,
+                    child: child,
+                  );
+                },
+              ),
+            );
+          }
+        },
+        child: Stack(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/images/chat_ground.png'),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-          ),
-
-          SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              children: [
-                const SizedBox(height: 20),
-
-                _buildSectionHeader('Аккаунт'),
-
-                _SettingsGlassCard(
-                  icon: Icons.person_outline,
-                  title: 'Имя пользователя',
-                  subtitle: 'Изменить отображаемое имя',
-                  onTap: () => _showEditDialog(
+  
+            SafeArea(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                children: [
+                  const SizedBox(height: 20),
+  
+                  _buildSectionHeader('Аккаунт'),
+  
+                  _SettingsGlassCard(
+                    icon: Icons.person_outline,
                     title: 'Имя пользователя',
-                    hint: 'Введите новое имя',
-                    controller: _nameController,
-                    onSave: () => print("Новое имя: ${_nameController.text}"),
+                    subtitle: 'Изменить отображаемое имя',
+                    onTap: () => _showEditDialog(
+                      title: 'Имя пользователя',
+                      hint: 'Введите новое имя',
+                      controller: _nameController,
+                      onSave: () => print("Новое имя: ${_nameController.text}"),
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                _SettingsGlassCard(
-                  icon: Icons.email_outlined,
-                  title: 'Эл. почта',
-                  subtitle: 'user@example.com',
-                  onTap: () => _showEditDialog(
-                    title: 'Смена почты',
-                    hint: 'Новый email',
-                    controller: _emailController,
-                    onSave: () => print("Email: ${_emailController.text}"),
+  
+                  const SizedBox(height: 12),
+  
+                  _SettingsGlassCard(
+                    icon: Icons.email_outlined,
+                    title: 'Эл. почта',
+                    subtitle: 'user@example.com',
+                    onTap: () => _showEditDialog(
+                      title: 'Смена почты',
+                      hint: 'Новый email',
+                      controller: _emailController,
+                      onSave: () => print("Email: ${_emailController.text}"),
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                _SettingsGlassCard(
-                  icon: Icons.lock_outline,
-                  title: 'Пароль',
-                  subtitle: '********',
-                  onTap: () => _showEditDialog(
-                    title: 'Смена пароля',
-                    hint: 'Новый пароль',
-                    isPassword: true,
-                    controller: _passwordController,
-                    onSave: () => print("Пароль изменен"),
+  
+                  const SizedBox(height: 12),
+  
+                  _SettingsGlassCard(
+                    icon: Icons.lock_outline,
+                    title: 'Пароль',
+                    subtitle: '********',
+                    onTap: () => _showEditDialog(
+                      title: 'Смена пароля',
+                      hint: 'Новый пароль',
+                      isPassword: true,
+                      controller: _passwordController,
+                      onSave: () => print("Пароль изменен"),
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                _SettingsGlassCard(
-                  icon: Icons.edit_note,
-                  title: 'Описание профиля',
-                  subtitle: 'Пару слов о себе',
-                  onTap: () => _showEditDialog(
-                    title: 'О себе',
-                    hint: 'Текст описания...',
-                    isMultiline: true,
-                    controller: _bioController,
-                    onSave: () => print("Bio: ${_bioController.text}"),
+  
+                  const SizedBox(height: 12),
+  
+                  _buildSectionHeader('Опасная зона', isDanger: true),
+  
+                  _SettingsGlassCard(
+                    icon: Icons.delete_forever_outlined,
+                    title: 'Удалить аккаунт',
+                    subtitle: 'Навсегда стереть данные',
+                    isDanger: true,
+                    onTap: _showDeleteConfirmation,
                   ),
-                ),
-
-                const SizedBox(height: 30),
-                _buildSectionHeader('Опасная зона', isDanger: true),
-
-                _SettingsGlassCard(
-                  icon: Icons.delete_forever_outlined,
-                  title: 'Удалить аккаунт',
-                  subtitle: 'Навсегда стереть данные',
-                  isDanger: true,
-                  onTap: _showDeleteConfirmation,
-                ),
-                
-                const SizedBox(height: 80),
-              ],
+                  
+                  const SizedBox(height: 80),
+                ],
+              ),
             ),
-          ),
-          
-          Align(
-             alignment: Alignment.bottomCenter,
-             child: Padding(
-                padding: const EdgeInsets.only(bottom: 55),
-                child: GlassPanel(
-                  height: 56,
-                  width: 250,
-                  borderRadius: BorderRadius.circular(28),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      GestureDetector(
-                        onTap: () {},
-                        child: Image.asset(
-                          'assets/icons/settings.png',
-                          width: 28,
-                          height: 28,
+            
+            Align(
+               alignment: Alignment.bottomCenter,
+               child: Padding(
+                  padding: const EdgeInsets.only(bottom: 55),
+                  child: GlassPanel(
+                    height: 56,
+                    width: 250,
+                    borderRadius: BorderRadius.circular(28),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        GestureDetector(
+                          onTap: () {},
+                          child: Image.asset(
+                            'assets/icons/settings.png',
+                            width: 28,
+                            height: 28,
+                          ),
                         ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            PageRouteBuilder(
-                              transitionDuration: const Duration(milliseconds: 300),
-                              pageBuilder: (_, __, ___) =>
-                                  ChatScreen(userName: widget.userName),
-                              transitionsBuilder: (_, animation, __, child) {
-                                final offsetAnimation = Tween<Offset>(
-                                  begin: const Offset(1.0, 0.0), // Changed to 1.0 (From Right)
-                                  end: Offset.zero,
-                                ).animate(CurvedAnimation(
-                                  parent: animation,
-                                  curve: Curves.easeInOut,
-                                ));
-                                return SlideTransition(
-                                  position: offsetAnimation,
-                                  child: child,
-                                );
-                              },
-                            ),
-                          );
-                        },
-                        child: Image.asset(
-                          'assets/icons/chat.png',
-                          width: 28,
-                          height: 28,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                             Navigator.pushReplacement(
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushReplacement(
                               context,
                               PageRouteBuilder(
                                 transitionDuration: const Duration(milliseconds: 300),
-                                pageBuilder: (_, __, ___) => ProfileScreen(
-                                  userName: widget.userName,
-                                ),
+                                pageBuilder: (_, __, ___) =>
+                                    ChatScreen(userName: widget.userName),
                                 transitionsBuilder: (_, animation, __, child) {
                                   final offsetAnimation = Tween<Offset>(
                                     begin: const Offset(1.0, 0.0), // Changed to 1.0 (From Right)
@@ -306,19 +288,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 },
                               ),
                             );
-                        },
-                        child: Image.asset(
-                          'assets/icons/profile.png',
-                          width: 28,
-                          height: 28,
+                          },
+                          child: Image.asset(
+                            'assets/icons/chat.png',
+                            width: 28,
+                            height: 28,
+                          ),
                         ),
-                      ),
-                    ],
+                        GestureDetector(
+                          onTap: () {
+                               Navigator.pushReplacement(
+                                context,
+                                PageRouteBuilder(
+                                  transitionDuration: const Duration(milliseconds: 300),
+                                  pageBuilder: (_, __, ___) => ProfileScreen(
+                                    userName: widget.userName,
+                                  ),
+                                  transitionsBuilder: (_, animation, __, child) {
+                                    final offsetAnimation = Tween<Offset>(
+                                      begin: const Offset(1.0, 0.0), // Changed to 1.0 (From Right)
+                                      end: Offset.zero,
+                                    ).animate(CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeInOut,
+                                    ));
+                                    return SlideTransition(
+                                      position: offsetAnimation,
+                                      child: child,
+                                    );
+                                  },
+                                ),
+                              );
+                          },
+                          child: Image.asset(
+                            'assets/icons/profile.png',
+                            width: 28,
+                            height: 28,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-             ),
-          ),
-        ],
+               ),
+            ),
+          ],
+        ),
       ),
     );
   }
