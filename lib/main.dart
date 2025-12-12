@@ -12,17 +12,17 @@ Future<void> main() async {
   final isLoggedIn = prefs.getBool('logged_in') ?? false;
   final savedName = prefs.getString('user_name') ?? 'Пользователь';
 
-  runApp(DisTegApp(
+  runApp(DisTagApp(
     isLoggedIn: isLoggedIn,
     savedName: savedName,
   ));
 }
 
-class DisTegApp extends StatelessWidget {
+class DisTagApp extends StatelessWidget {
   final bool isLoggedIn;
   final String savedName;
 
-  const DisTegApp({
+  const DisTagApp({
     super.key,
     required this.isLoggedIn,
     required this.savedName,
