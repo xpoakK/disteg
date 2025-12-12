@@ -2,7 +2,6 @@ platform :ios, '13.0'
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
-# ВАЖНО: включаем modular headers для всех pods
 use_modular_headers!
 
 project 'Runner', {
