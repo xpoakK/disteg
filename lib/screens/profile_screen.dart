@@ -77,7 +77,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-
             SafeArea(
               child: Column(
                 children: [
